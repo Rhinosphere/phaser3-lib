@@ -45,6 +45,7 @@ import ClickMethods from './ClickMethods.js';
 import ClickOutsideMethods from './ClickOutsideMethods.js';
 import TouchingMethods from './TouchingMethods.js';
 import SetChildrenInteractive from './SetChildrenInteractive.js';
+import InteractionCooldown from './InteractionCooldown.js';
 import BroadcastEvent from './BroadcastEvent.js';
 
 var methods = {
@@ -83,6 +84,7 @@ var methods = {
     setDraggable: SetDraggable,
     setChildrenInteractive: SetChildrenInteractive,
     broadcastEvent: BroadcastEvent,
+    interactionCooldown: InteractionCooldown,
 
 };
 

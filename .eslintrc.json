@@ -1,20 +1,18 @@
 {
-  "parser": "babel-eslint",
-  "extends": "standard",
-  "parserOptions": {
-    "ecmaVersion": 6,
-    "sourceType": "module"
-  },
-  "env": {
-    "browser": true
-  },
-  "rules": {
-    "import/no-unresolved": [2]
-  },
-  "globals": {
-    "Phaser": true
-  },
-  "settings": {
-    "import/core-modules": [ "phaser" ]
-  }
+  "extends": ["../../.eslintrc.json"],
+  "ignorePatterns": ["!**/*"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {}
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {}
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "rules": {}
+    }
+  ]
 }

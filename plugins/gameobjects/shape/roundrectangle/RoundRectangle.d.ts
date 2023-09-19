@@ -64,7 +64,7 @@ declare class RoundRectangle extends Phaser.GameObjects.Shape {
         config?: RoundRectangle.IConfig
     )
 
-    resize(width: number, height: number): this;
+    resize(width?: number, height?: number): void;
 
     setIteration(iteration: number): this;
     iteration: number;
