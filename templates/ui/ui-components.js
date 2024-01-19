@@ -25,6 +25,7 @@ import CustomProgress from './customprogress/CustomProgress.js';
 import TransitionImage from './transitionimage/TransitionImage.js';
 import TransitionImagePack from './transitionimagepack/TransitionImagePack.js';
 import ImageBox from './imagebox/ImageBox.js';
+import ImageInputLabel from './imageinputlabel/ImageInputLabel.js';
 import FullWindowRectangle from './fullwindowrectangle/FullWindowRectangle.js';
 import Cover from './cover/Cover.js';
 import InputText from './inputtext/InputText.js';
@@ -68,6 +69,7 @@ import PerspectiveCard from './perspectivecard/PerspectiveCard.js';
 import TabPages from './tabpages/TabPages.js';
 import Folder from './folder/Folder.js';
 import TextArea from './textarea/TextArea.js';
+import TextAreaInput from './textareainput/TextAreaInput.js';
 import ScrollablePanel from './scrollablepanel/ScrollablePanel.js';
 import ScrollBar from './scrollbar/ScrollBar.js';
 import Toast from './toast/Toast.js';
@@ -159,6 +161,7 @@ export {
     TransitionImage,
     TransitionImagePack,
     ImageBox,
+    ImageInputLabel,
 
     Container,
     Sizer,
@@ -192,6 +195,7 @@ export {
     TabPages,
     Folder,
     TextArea,
+    TextAreaInput,
     ScrollablePanel,
     ScrollBar,
     Toast,

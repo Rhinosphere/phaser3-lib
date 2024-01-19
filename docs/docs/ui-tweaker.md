@@ -100,6 +100,10 @@ var tweaker = scene.rexUI.add.tweaker({
 
             },
 
+            inputTextArea: {
+                height:
+            },
+
             list: {
                 label: {
 
@@ -240,6 +244,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
 
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -263,6 +269,8 @@ tweaker.addInput({
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     // monitor: false,
 
@@ -310,6 +318,94 @@ tweaker.addInput({
 
 See [Styles of text input](ui-tweaker.md#styles-of-text-input)
 
+#### Text-Area input row
+
+`object[key]` is a text value.
+
+```javascript
+tweaker.addInput(object, key, {    
+    view: 'textarea',
+
+    // icon: undefined,
+    // iconFrame: undefined,
+    // iconSize: undefined,
+
+    // title: undefined,
+
+    // orientation: 'x',
+
+    // monitor: false,
+
+    // key: undefined,
+
+    // autoUpdate: true,
+    // onValidate: undefined,
+    // onValueChange: undefined,    
+})
+```
+
+or
+
+```javascript
+tweaker.addInput({
+    bindingTarget: object,
+    bindingKey: key,
+    view: 'textarea',
+
+    // icon: undefined,
+    // iconFrame: undefined,
+    // iconSize: undefined,
+
+    // title: undefined,
+
+    // orientation: 'x',
+
+    // monitor: false,
+
+    // key: undefined,
+
+    // autoUpdate: true,
+    // onValidate: undefined,
+    // onValueChange: undefined,    
+})
+```
+
+- `bindingTarget` : Binding target object.
+    - Can bind target later via `tweaker.setBindingTarget(object)`.
+- `bindingKey` : Bind to target's property key. Necessary field
+- `view` : `'textarea'`.
+- `icon`, `iconFrame` : Texture key, frame name of icon on title-label.
+- `iconSize` : Fixed icon size
+- `title` : Display text of title-label. Default value is equal to `key`.
+- `monitor` : 
+    - `false` : Don't update input text from current object. Default behavior.
+    - `true` : Update input text from current object, in `postupdate` event of scene.
+- `key` : Add this child into childMap, which could be read back by `tweaker.getElement(key)`.
+    - `undefined` : Don't add this child. Default value.
+- `autoUpdate` : 
+    - `true` : Update binding key when user input. Default behavior.
+    - `false` : Use `onValueChange` to set value of binding key when user input.
+- `onValidate` : 
+    - Callback invoked when new value input.
+        ```javascript
+        function(newValue, oldValue, bindingTarget, bindingKey) { 
+            return true;
+        }
+        ```
+        - `true` : Accept this new value.
+        - `false` : Reject this new value.
+    - `undefined` : Always accept new value changing. Default behavior.
+- `onValueChange` : 
+    - Callback invoked when binding value changing.
+        ```javascript
+        function(newValue, oldValue, bindingTarget, bindingKey) { 
+        
+        }
+        ```
+    - `undefined` : Ignore this feature. Default value.
+
+See [Styles of text-area input](ui-tweaker.md#styles-of-text-area-input)
+
 #### Text input from list
 
 `object[key]` is a text value.
@@ -323,6 +419,8 @@ tweaker.addInput(object, key, {
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     options: [
         {text: text0, value: value0},
@@ -349,6 +447,8 @@ tweaker.addInput({
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     options: [
         {text: text0, value: value0},
@@ -395,6 +495,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
 
+    // orientation: 'x',
+
     options: [
         {text: text0, value: value0},
         {text: text1, value: value1},
@@ -420,6 +522,8 @@ tweaker.addInput({
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     options: [
         {text: text0, value: value0},
@@ -466,6 +570,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
     
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -486,6 +592,8 @@ tweaker.addInput({
 
     // title: undefined,
     
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -524,6 +632,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
 
+    // orientation: 'x',
+
     min: minValue, 
     max: maxValue,
 
@@ -549,6 +659,8 @@ tweaker.addInput({
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     min: minValue, 
     max: maxValue,
@@ -603,6 +715,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
 
+    // orientation: 'x',
+
     options: [
         {text: text0, value: value0},
         {text: text1, value: value1},
@@ -628,6 +742,8 @@ tweaker.addInput({
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     options: [
         {text: text0, value: value0},
@@ -675,6 +791,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
 
+    // orientation: 'x',
+
     options: [
         {text: text0, value: value0},
         {text: text1, value: value1},
@@ -700,6 +818,8 @@ tweaker.addInput({
     // iconSize: undefined,
 
     // title: undefined,
+
+    // orientation: 'x',
 
     options: [
         {text: text0, value: value0},
@@ -747,6 +867,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
     
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -767,6 +889,8 @@ tweaker.addInput({
 
     // title: undefined,
     
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -803,6 +927,8 @@ tweaker.addInput(object, key, {
 
     // title: undefined,
     
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -824,6 +950,8 @@ tweaker.addInput({
 
     // title: undefined,
     
+    // orientation: 'x',
+
     // monitor: false,
 
     // key: undefined,
@@ -972,7 +1100,7 @@ See also - [dirty](ui-basesizer.md#dirty)
 
 #### Styles of text input 
 
-Style of text/number input is defined in 
+Style of text-area input is defined in 
 
 - `styles.inputRow.title`
 - `styles.inputRow.inputText` 
@@ -1104,12 +1232,221 @@ Style of text/number input is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+
+            proportion: {
+                title: 0, inputField: 0,
             }
         }
     }
 }
 ```
 
+#### Styles of text-area input 
+
+Style of text-area input is defined in 
+
+- `styles.inputRow.title`
+- `styles.inputRow.inputTextArea` 
+- `styles.inputRow.inputText` 
+- `styles.inputRow.slider` 
+- `styles.inputRow.background`
+
+```javascript
+{
+    styles: {
+        inputRow: {
+            background: {
+                radius: 0,
+                // radius: {tl: {x,y}, tr: {x,y}, bl: {x,y}, br: {x,y}}
+
+                color: undefined,
+                alpha: undefined,
+                strokeColor: undefined,
+                strokeAlpha: undefined,
+                strokeWidth: undefined,
+            },
+
+            title: {
+                background: {
+                    radius: 0,
+                    // radius: {tl: {x,y}, tr: {x,y}, bl: {x,y}, br: {x,y}}
+    
+                    color: undefined,
+                    alpha: undefined,
+                    strokeColor: undefined,
+                    strokeAlpha: undefined,
+                    strokeWidth: undefined,
+                },
+    
+                text: {
+                    fontFamily: 'Courier',
+                    fontSize: '16px',
+                    fontStyle: '',
+                    backgroundColor: null,
+                    color: '#fff',
+                    stroke: '#fff',
+                    strokeThickness: 0,
+                    shadow: {
+                        offsetX: 0,
+                        offsetY: 0,
+                        color: '#000',
+                        blur: 0,
+                        stroke: false,
+                        fill: false
+                    },                  
+                    padding: {
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                    },
+                    // more text styles
+                },
+
+                iconSize: undefined,
+                iconWidth: undefined, iconHeight: undefined,
+
+                space: {
+                    left: 0, right: 0, top: 0, bottom:0, 
+                    icon: 0, text: 0
+                }
+            },
+
+            inputTextArea: {
+                height: undefined,
+
+                text: {
+
+                },
+
+                slider: {
+                    // ...
+                }
+            },
+
+            inputText: {
+                background: {
+                    color: null,
+                    color2: null,
+                    horizontalGradient: true,
+
+                    stroke: null,
+                    strokeThickness: 2,
+
+                    cornerRadius: 0,
+                    cornerIteration: null
+                },
+                focusStyle: {
+                    // color:
+                    // color2:
+                    // horizontalGradient:
+
+                    // stroke:
+                    // strokeThickness:
+
+                    // cornerRadius:
+                    // cornerIteration:
+                },
+
+                style: {
+                    bold: false,
+                    italic: false,
+                    fontSize: '16px',
+                    fontFamily: 'Courier',
+                    color: '#fff',
+                    stroke: '#fff',
+                    strokeThickness: 0,
+                    shadowColor: null,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 0,
+                    shadowBlur: 0,
+                    backgroundColor: null,
+                    backgroundHeight: undefined,
+                    backgroundBottomY: undefined,
+                    offsetX: 0,
+                    offsetY: 0
+                },
+                cursorStyle: {
+                    // bold:
+                    // italic:
+                    // fontSize:
+                    // fontFamily:
+                    // color:
+                    // stroke:
+                    // strokeThickness:
+                    // shadowColor:
+                    // shadowOffsetX:
+                    // shadowOffsetY:
+                    // shadowBlur:
+                    // backgroundColor:
+                    // backgroundHeight:
+                    // backgroundBottomY:
+                    // offsetX:
+                    // offsetY:
+                }
+            },
+
+            slider: {
+                track: {
+                    height: 0,
+
+                    radius: 0,
+                    // radius: {tl: {x,y}, tr: {x,y}, bl: {x,y}, br: {x,y}}
+
+                    color: undefined,
+                    alpha: undefined,
+                    strokeColor: undefined,
+                    strokeAlpha: undefined,
+                    strokeWidth: undefined,
+                },
+
+                indicator: {
+                    height: 0,
+
+                    radius: 0,
+                    // radius: {tl: {x,y}, tr: {x,y}, bl: {x,y}, br: {x,y}}
+
+                    color: undefined,
+                    alpha: undefined,
+                    strokeColor: undefined,
+                    strokeAlpha: undefined,
+                    strokeWidth: undefined,
+                },
+
+                thumb: {
+                    width: 0, height: 0,
+
+                    radius: 0,
+                    // radius: {tl: {x,y}, tr: {x,y}, bl: {x,y}, br: {x,y}}
+
+                    color: undefined,
+                    alpha: undefined,
+                    strokeColor: undefined,
+                    strokeAlpha: undefined,
+                    strokeWidth: undefined,
+                }
+            },
+
+            space: {
+                left: 0, right: 0, top: 0, bottom: 0,
+                title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
+            }
+        }
+    }
+}
+```
+
+Style of text-area is defined at `styles.inputRow.inputTextArea` :
+
+- Define style of input text at `styles.inputRow.inputTextArea.text`, if not given, it will use
+  `styles.inputRow.inputText`.
+- Define style of slider at `styles.inputRow.inputTextArea.slider`, if not given, it will use
+  `styles.inputRow.slider`.
 
 #### Styles of list input 
 
@@ -1284,6 +1621,10 @@ Style of text/number list input is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
             }
         }
     }
@@ -1412,6 +1753,10 @@ Style of buttons input is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
             }
 
         }
@@ -1596,6 +1941,14 @@ Style of range input is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
+                range: {
+                    slider: 0,
+                    inputText: 0,
+                }
             }
 
         }
@@ -1603,6 +1956,7 @@ Style of range input is defined in
 }
 ```
 
+- Set `proportion.range.slider` and `proportion.range.inputText` to layout slider and inputText.
 
 #### Styles of color input
 
@@ -1828,7 +2182,12 @@ Style of color input is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
             }
+
         }
     }
 }
@@ -1962,7 +2321,12 @@ Style of boolean input is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
             }
+
         }
     }
 }
@@ -2086,7 +2450,12 @@ Style of button is defined in
             space: {
                 left: 0, right: 0, top: 0, bottom: 0,
                 title: 0
+            },
+            
+            proportion: {
+                title: 0, inputField: 0,
             }
+
         }
     }
 }

@@ -12,20 +12,20 @@ export default BaseSizer;
 declare namespace BaseSizer {
   type AlignTypes =
     | number
-    | "center"
-    | "left"
-    | "right"
-    | "top"
-    | "bottom"
-    | "left-top"
-    | "left-center"
-    | "left-bottom"
-    | "center-top"
-    | "center-center"
-    | "center-bottom"
-    | "right-top"
-    | "right-center"
-    | "right-bottom";
+    | 'center'
+    | 'left'
+    | 'right'
+    | 'top'
+    | 'bottom'
+    | 'left-top'
+    | 'left-center'
+    | 'left-bottom'
+    | 'center-top'
+    | 'center-center'
+    | 'center-bottom'
+    | 'right-top'
+    | 'right-center'
+    | 'right-bottom';
 
   type PaddingTypes =
     | number
@@ -179,6 +179,20 @@ declare class BaseSizer extends ContainerLite {
     [key: string]: Phaser.GameObjects.GameObject;
   }): this;
 
+  removeFromParentSizer(): this;
+
+  removeBackground(
+    gameObject: Phaser.GameObjects.GameObject,
+    destroyChild?: boolean
+  ): this;
+
+  removeAllBackgrounds(destroyChild?: boolean): this;
+
+  removeChildCallback(
+    gameObject: Phaser.GameObjects.GameObject,
+    destroyChild?: boolean
+  ): this;
+
   removeChildrenMap(key: string): this;
   removeChildrenMap(gameObject: Phaser.GameObjects.GameObject): this;
 
@@ -190,6 +204,8 @@ declare class BaseSizer extends ContainerLite {
     | Phaser.GameObjects.GameObject[]
     | { [name: string]: Phaser.GameObjects.GameObject }
     | null;
+
+  getChildIndex(child: Phaser.GameObjects.GameObject): number | string | null;
 
   getParentSizer(name?: string): BaseSizer | null;
 
@@ -341,35 +357,35 @@ declare class BaseSizer extends ContainerLite {
 
   fadeOutPromise(duration: number): Promise<any>;
 
-  popUp(duration: number, orientation?: 0 | 1 | "x" | "y", ease?: string): this;
+  popUp(duration: number, orientation?: 0 | 1 | 'x' | 'y', ease?: string): this;
 
   popUpPromise(
     duration: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): Promise<any>;
 
   scaleDownDestroy(
     duration: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): this;
 
   scaleDownDestroyPromise(
     duration: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): Promise<any>;
 
   scaleDown(
     duration: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): this;
 
   scaleDownPromise(
     duration: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): Promise<any>;
 
@@ -377,7 +393,7 @@ declare class BaseSizer extends ContainerLite {
     duration: number,
     peakValue?: number,
     repeat?: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): this;
 
@@ -385,20 +401,20 @@ declare class BaseSizer extends ContainerLite {
     duration: number,
     peakValue?: number,
     repeat?: number,
-    orientation?: 0 | 1 | "x" | "y",
+    orientation?: 0 | 1 | 'x' | 'y',
     ease?: string
   ): Promise<any>;
 
   shake(
     duration?: number,
     magnitude?: number,
-    magnitudeMode?: 0 | 1 | "constant" | "decay"
+    magnitudeMode?: 0 | 1 | 'constant' | 'decay'
   ): this;
 
   shakePromise(
     duration?: number,
     magnitude?: number,
-    magnitudeMode?: 0 | 1 | "constant" | "decay"
+    magnitudeMode?: 0 | 1 | 'constant' | 'decay'
   ): Promise<any>;
 
   easeDataTo(
@@ -447,9 +463,16 @@ declare class BaseSizer extends ContainerLite {
   }): this;
 
   setDraggable(
-    senser: boolean | string | Phaser.GameObjects.GameObject,
-    draggable?: boolean
+    sensor?: boolean | string | Phaser.GameObjects.GameObject,
+    draggable?: boolean,
+    target?: Phaser.GameObjects.GameObject
   ): this;
+
+  setDraggable(config: {
+    sensor?: boolean | string | Phaser.GameObjects.GameObject;
+    target?: Phaser.GameObjects.GameObject;
+    draggable?: boolean;
+  }): this;
 
   onClick(
     callback: (

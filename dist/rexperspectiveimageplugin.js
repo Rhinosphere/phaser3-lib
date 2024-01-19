@@ -758,15 +758,34 @@
     if (descending === undefined) {
       descending = false;
     }
-    var displayList = gameObjects[0].displayList;
-    if (displayList) displayList.depthSort();
+    var itemList;
+    var gameObject = gameObjects[0];
+    if (gameObject.displayList) {
+      // Inside a scene or a layer
+      itemList = gameObject.displayList; // displayList
+    } else if (gameObject.parentContainer) {
+      // Inside a container
+      itemList = gameObject.parentContainer.list; // array
+    } else {
+      itemList = gameObject.scene.sys.displayList; // displayList
+      // ??       
+    }
+
+    if (itemList.depthSort) {
+      // Is a displayList object
+      itemList.depthSort();
+      itemList = itemList.list;
+      // itemList is an array now
+    }
+
+    // itemList is an array
     if (descending) {
       gameObjects.sort(function (childA, childB) {
-        if (displayList) return displayList.getIndex(childB) - displayList.getIndex(childA);else return 0;
+        return itemList.indexOf(childB) - itemList.indexOf(childA);
       });
     } else {
       gameObjects.sort(function (childA, childB) {
-        if (displayList) return displayList.getIndex(childA) - displayList.getIndex(childB);else return 0;
+        return itemList.indexOf(childA) - itemList.indexOf(childB);
       });
     }
     return gameObjects;
@@ -1863,15 +1882,24 @@
       if (destroyMask === undefined) {
         destroyMask = false;
       }
+      var self = this;
 
       // Clear current mask
       this._mask = null;
-      // Clear children mask
+      this.setChildMaskVisible(this);
+      // Also set maskVisible to `true`
+
       this.children.forEach(function (child) {
+        // Clear child's mask
         if (child.clearMask) {
           child.clearMask(false);
         }
+        if (!child.hasOwnProperty('isRexContainerLite')) {
+          self.setChildMaskVisible(child);
+          // Set child's maskVisible to `true`
+        }
       });
+
       if (destroyMask && this.mask) {
         this.mask.destroy();
       }
@@ -2220,38 +2248,77 @@
     }
   };
 
+  var ContainerKlass = Phaser.GameObjects.Container;
+  var IsContainerGameObject = function IsContainerGameObject(gameObject) {
+    return gameObject instanceof ContainerKlass;
+  };
+
+  var LayerKlass = Phaser.GameObjects.Layer;
+  var IsLayerGameObject = function IsLayerGameObject(gameObject) {
+    return gameObject instanceof LayerKlass;
+  };
+
+  var GetValidChildren = function GetValidChildren(parent) {
+    var children = parent.getAllChildren([parent]);
+    children = children.filter(function (gameObject) {
+      return !!gameObject.displayList ||
+      // At scene's displayList or at a layer
+      !!gameObject.parentContainer; // At a container
+    });
+
+    return children;
+  };
+  var AddToContainer = function AddToContainer(p3Container) {
+    var gameObjects = GetValidChildren(this);
+    SortGameObjectsByDepth(gameObjects);
+    p3Container.add(gameObjects);
+    return this;
+  };
+  var RemoveFromContainer = function RemoveFromContainer(p3Container, descending, addToScene) {
+    var gameObjects = GetValidChildren(this);
+    SortGameObjectsByDepth(gameObjects, descending);
+    p3Container.remove(gameObjects);
+    if (addToScene) {
+      gameObjects.forEach(function (gameObject) {
+        gameObject.addToDisplayList();
+      });
+    }
+    return this;
+  };
   var P3Container = {
     addToContainer: function addToContainer(p3Container) {
+      if (!IsContainerGameObject(p3Container)) {
+        return this;
+      }
       this._setParentContainerFlag = true;
-      var gameObjects = this.getAllChildren([this]);
-      SortGameObjectsByDepth(gameObjects);
-      p3Container.add(gameObjects);
+      AddToContainer.call(this, p3Container);
       this._setParentContainerFlag = false;
       return this;
     },
     addToLayer: function addToLayer(layer) {
-      this.addToContainer(layer);
+      if (!IsLayerGameObject(layer)) {
+        return this;
+      }
+      AddToContainer.call(this, layer);
       return this;
     },
     removeFromContainer: function removeFromContainer() {
       if (!this.parentContainer) {
         return this;
       }
-
-      // Will add gameObjects to scene
-      var gameObjects = this.getAllChildren([this]).filter(function (gameObject) {
-        return !!gameObject.scene;
-      });
-      if (gameObjects.length === 0) {
+      this._setParentContainerFlag = true;
+      RemoveFromContainer.call(this, this.parentContainer, true, false);
+      this._setParentContainerFlag = false;
+      return this;
+    },
+    removeFromLayer: function removeFromLayer(addToScene) {
+      if (addToScene === undefined) {
+        addToScene = true;
+      }
+      if (!IsLayerGameObject(this.displayList)) {
         return this;
       }
-      this._setParentContainerFlag = true;
-      if (gameObjects.length > 1) {
-        SortGameObjectsByDepth(gameObjects);
-        gameObjects.reverse();
-      }
-      this.parentContainer.remove(gameObjects);
-      this._setParentContainerFlag = false;
+      RemoveFromContainer.call(this, this.displayList, false, addToScene);
       return this;
     },
     getParentContainer: function getParentContainer() {
@@ -2271,7 +2338,7 @@
       return null;
     },
     addToParentContainer: function addToParentContainer(gameObject) {
-      // Don't add to layer if gameObject is not in any displayList
+      // Do nothing if gameObject is not in any displayList
       if (!gameObject.displayList) {
         return this;
       }
@@ -2290,7 +2357,7 @@
     }
   };
 
-  var Layer = {
+  var RenderLayer = {
     hasLayer: function hasLayer() {
       return !!this.privateRenderLayer;
     },
@@ -2360,7 +2427,13 @@
       if (!layer) {
         return this;
       }
-      layer.remove(gameObject);
+      if (gameObject.isRexContainerLite) {
+        // Remove containerLite and its children
+        gameObject.removeFromLayer(true);
+      } else {
+        // Remove gameObject directly
+        layer.remove(gameObject);
+      }
       state.layer = null;
       return this;
     }
@@ -2520,7 +2593,7 @@
     changeOrigin: ChangeOrigin,
     drawBounds: DrawBounds
   };
-  Object.assign(methods, Parent, AddChild, RemoveChild, ChildState, Transform, Position, Rotation, Scale, Visible, Alpha, Active, ScrollFactor, Mask, Depth, Children, Tween, P3Container, Layer, RenderTexture);
+  Object.assign(methods, Parent, AddChild, RemoveChild, ChildState, Transform, Position, Rotation, Scale, Visible, Alpha, Active, ScrollFactor, Mask, Depth, Children, Tween, P3Container, RenderLayer, RenderTexture);
 
   var ContainerLite = /*#__PURE__*/function (_Base) {
     _inherits(ContainerLite, _Base);

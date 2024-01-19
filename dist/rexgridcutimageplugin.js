@@ -119,6 +119,9 @@
   }
 
   var GetFrameNameCallback = function GetFrameNameCallback(baseFrameName, delimiter) {
+    if (_typeof(baseFrameName) === 'object') {
+      baseFrameName = baseFrameName.name;
+    }
     if (delimiter === undefined) {
       delimiter = ',';
     }
@@ -135,7 +138,7 @@
     return callback;
   };
 
-  var GridCut = function GridCut(scene, key, frame, columns, rows, getFrameNameCallback) {
+  var GenerateFrames = function GenerateFrames(scene, key, frame, columns, rows, getFrameNameCallback) {
     if (frame == null) {
       frame = '__BASE';
     }
@@ -149,14 +152,16 @@
     var cellX, cellY, cellName;
     var cellWidth = baseWidth / columns,
       cellHeight = baseHeight / rows;
+    var frameCutX = baseFrame.cutX,
+      frameCutY = baseFrame.cutY;
     var offsetX = 0,
       offsetY = 0;
     for (var y = 0; y < rows; y++) {
       offsetX = 0;
       for (var x = 0; x < columns; x++) {
         cellName = getFrameNameCallback(x, y);
-        cellX = offsetX + baseFrame.cutX;
-        cellY = offsetY + baseFrame.cutY;
+        cellX = offsetX + frameCutX;
+        cellY = offsetY + frameCutY;
         texture.add(cellName, 0, cellX, cellY, cellWidth, cellHeight);
         offsetX += cellWidth;
       }
@@ -181,7 +186,7 @@
       columns = GetValue(config, 'columns', 1);
       rows = GetValue(config, 'rows', 1);
     }
-    var createImageCallback = GetValue(config, 'onCreateImage');
+    var createImageCallback = GetValue(config, 'createImageCallback');
     if (!createImageCallback) {
       var ImageClass = GetValue(config, 'ImageClass', DefaultImageClass);
       createImageCallback = function createImageCallback(scene, key, frame) {
@@ -196,7 +201,7 @@
     var scene = gameObject.scene;
     var texture = gameObject.texture;
     var frame = gameObject.frame;
-    var result = GridCut(scene, texture, frame, columns, rows);
+    var result = GenerateFrames(scene, texture, frame, columns, rows);
     var getFrameNameCallback = result.getFrameNameCallback;
     var scaleX = gameObject.scaleX,
       scaleY = gameObject.scaleY;
@@ -205,8 +210,8 @@
       startX = topLeft.x,
       startY = topLeft.y;
     var cellGameObjects = [];
-    var cellWidth = result.cellWidth * scaleX,
-      cellHeight = result.cellHeight * scaleY;
+    var scaleCellWidth = result.cellWidth * scaleX,
+      scaleCellHeight = result.cellHeight * scaleY;
     for (var y = 0; y < rows; y++) {
       for (var x = 0; x < columns; x++) {
         var cellGameObject;
@@ -219,11 +224,11 @@
         if (addToScene) {
           scene.add.existing(cellGameObject);
         }
-        var cellTLX = startX + cellWidth * x;
-        var cellTLY = startY + cellHeight * y;
-        var cellX = cellTLX + originX * cellWidth;
-        var cellY = cellTLY + originY * cellHeight;
         if (align) {
+          var cellTLX = startX + scaleCellWidth * x;
+          var cellTLY = startY + scaleCellHeight * y;
+          var cellX = cellTLX + originX * scaleCellWidth;
+          var cellY = cellTLY + originY * scaleCellHeight;
           cellGameObject.setOrigin(originX, originY).setPosition(cellX, cellY).setScale(scaleX, scaleY).setRotation(rotation);
           RotateAround(cellGameObject, startX, startY, rotation);
         }

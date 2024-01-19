@@ -35,7 +35,6 @@
 1. [Canvas/Line progress](canvas-lineprogress.md): Horizontal line progress bar filled with gradient color on canvas.
 1. [Canvas/Round rectangle](canvas-roundrectangle.md): Round rectangle on canvas.
 1. [Canvas image data](canvas-data.md): Get image data from texture, or text object.
-1. [Canvas frame manager](canvasframemanager.md): Generate bitmapfont from text game object, or bbcode text game object.
 1. [Circle mask image](circlemaskimage.md): Load a texture, then apply a circle mask.
 1. [Click outside](clickoutside.md): Fires 'clickoutside' event when pointer-down or pointer-up outside of game object.
 1. [Clock](clock.md): A clock to count elapsed time.
@@ -49,6 +48,7 @@
 1. [CSV-to-hash-table](csvtohashtable.md): Hash table indexed by (col-key, row-key) from csv string.
 1. [Cursor at bound](cursoratbound.md): Map position pf cursor to cursor key state.
 1. [Curve/Spiral](curve-spiral.md): Spiral curve.
+1. [Cut Jigsaw Image](cutjigsawimage.md): Cut image into pieces for jigsaw application.
 1. [Drag](drag.md): Drag game object.
 1. [Drag-rotate](dragrotate.md): Get dragging angle around a specific point.
 1. [Drop down](dropdown.md): Drop down game object below another target game object.
@@ -73,6 +73,7 @@
 1. [Firebase/Single-room](firebase-singleroom.md): Chat room, using firebase-database.
 1. [Flash](flash.md): Flashing (set invisible then visible) game object.
 1. [Flip](flip.md): Flipping game object to another face by scaling width/height.
+1. [Frame manager](framemanager.md): Draw frames on canvas texture, or dynamic texture.
 1. [FSM](fsm.md): Finite state machine.
 1. [Fuzzy](fuzzy.md): A wrap of fuzzy logic.
 1. [Gashapon](gashapon.md): Pick random item from box.
@@ -85,7 +86,7 @@
 1. [Gesture/Swipe](gesture-swipe.md): Get swipe events of a game object.
 1. [Gesture/Tap](gesture-tap.md): Get tap/multi-taps events of a game object.
 1. [Grid align](gridalign.md): Align objects on quadrilateral or hexagon grid.
-1. [Grid cut image](gridcutimage.md): Create image game objects in grids, to assemble target texture.
+1. [Grid cut image](gridcutimage.md): Grid cut image texture to frames, then create image game objects from these frames.
 1. [Grid table](gridtable.md): Viewer of grid table, to manipulate game object of each visible cell.
 1. [Hidden input text](hiddeninputtext.md): An invisible Input DOM element to receive character input and display on text game object.
 1. [Image box](imagebox.md): Keep aspect ratio of image game object after scale-down resizing.
@@ -207,6 +208,7 @@
 1. [UI/Grid sizer](ui-gridsizer.md): Layout children game objects in grids.
 1. [UI/Gird table](ui-gridtable.md): A container with a grid table, slider, and scroller.
 1. [UI/Holy grail](ui-holygrail.md): Layout elements in [Holy grail](https://en.wikipedia.org/wiki/Holy_grail_(web_design)) style.
+1. [UI/Image input label](ui-imageinputlabel.md): A container with a canvas icon, text, and background. Click icon to popup a (image) file chooser dialog, display selected image on canvas.
 1. [UI/Knob](ui-knob.md): A knob button based on circular progress.
 1. [UI/Label](ui-label.md): A game object container with an icon, text, and background.
 1. [UI/Menu](ui-menu.md): A container with buttons and sub-menu.
@@ -227,6 +229,7 @@
 1. [UI/Tab-pages](ui-tabpages.md): A container with tabs and pages, only current page is visible.
 1. [UI/Tabs](ui-tabs.md): A container with 4 groups of buttons around a center panel.
 1. [UI/Text area](ui-textarea.md): A container with a text, slider, and scroller.
+1. [UI/Text area input](ui-textareainput.md): A container with a canvasInput, and slider.
 1. [UI/Text box](ui-textbox.md): A container with an icon, (typing and paging) text, and background.
 1. [UI/Title label](ui-titlelabel.md): A container with title, text in two rows, and an icon, background.
 1. [UI/Toast](ui-toast.md): Show text message for a short while.

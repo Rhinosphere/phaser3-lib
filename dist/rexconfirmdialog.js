@@ -1030,15 +1030,24 @@
       if (destroyMask === undefined) {
         destroyMask = false;
       }
+      var self = this;
 
       // Clear current mask
       this._mask = null;
-      // Clear children mask
+      this.setChildMaskVisible(this);
+      // Also set maskVisible to `true`
+
       this.children.forEach(function (child) {
+        // Clear child's mask
         if (child.clearMask) {
           child.clearMask(false);
         }
+        if (!child.hasOwnProperty('isRexContainerLite')) {
+          self.setChildMaskVisible(child);
+          // Set child's maskVisible to `true`
+        }
       });
+
       if (destroyMask && this.mask) {
         this.mask.destroy();
       }
@@ -1053,15 +1062,34 @@
     if (descending === undefined) {
       descending = false;
     }
-    var displayList = gameObjects[0].displayList;
-    displayList.depthSort();
+    var itemList;
+    var gameObject = gameObjects[0];
+    if (gameObject.displayList) {
+      // Inside a scene or a layer
+      itemList = gameObject.displayList; // displayList
+    } else if (gameObject.parentContainer) {
+      // Inside a container
+      itemList = gameObject.parentContainer.list; // array
+    } else {
+      itemList = gameObject.scene.sys.displayList; // displayList
+      // ??       
+    }
+
+    if (itemList.depthSort) {
+      // Is a displayList object
+      itemList.depthSort();
+      itemList = itemList.list;
+      // itemList is an array now
+    }
+
+    // itemList is an array
     if (descending) {
       gameObjects.sort(function (childA, childB) {
-        return displayList.getIndex(childB) - displayList.getIndex(childA);
+        return itemList.indexOf(childB) - itemList.indexOf(childA);
       });
     } else {
       gameObjects.sort(function (childA, childB) {
-        return displayList.getIndex(childA) - displayList.getIndex(childB);
+        return itemList.indexOf(childA) - itemList.indexOf(childB);
       });
     }
     return gameObjects;
@@ -1408,38 +1436,77 @@
     }
   };
 
+  var ContainerKlass = Phaser.GameObjects.Container;
+  var IsContainerGameObject = function IsContainerGameObject(gameObject) {
+    return gameObject instanceof ContainerKlass;
+  };
+
+  var LayerKlass = Phaser.GameObjects.Layer;
+  var IsLayerGameObject = function IsLayerGameObject(gameObject) {
+    return gameObject instanceof LayerKlass;
+  };
+
+  var GetValidChildren = function GetValidChildren(parent) {
+    var children = parent.getAllChildren([parent]);
+    children = children.filter(function (gameObject) {
+      return !!gameObject.displayList ||
+      // At scene's displayList or at a layer
+      !!gameObject.parentContainer; // At a container
+    });
+
+    return children;
+  };
+  var AddToContainer = function AddToContainer(p3Container) {
+    var gameObjects = GetValidChildren(this);
+    SortGameObjectsByDepth(gameObjects);
+    p3Container.add(gameObjects);
+    return this;
+  };
+  var RemoveFromContainer = function RemoveFromContainer(p3Container, descending, addToScene) {
+    var gameObjects = GetValidChildren(this);
+    SortGameObjectsByDepth(gameObjects, descending);
+    p3Container.remove(gameObjects);
+    if (addToScene) {
+      gameObjects.forEach(function (gameObject) {
+        gameObject.addToDisplayList();
+      });
+    }
+    return this;
+  };
   var P3Container = {
     addToContainer: function addToContainer(p3Container) {
+      if (!IsContainerGameObject(p3Container)) {
+        return this;
+      }
       this._setParentContainerFlag = true;
-      var gameObjects = this.getAllChildren([this]);
-      SortGameObjectsByDepth(gameObjects);
-      p3Container.add(gameObjects);
+      AddToContainer.call(this, p3Container);
       this._setParentContainerFlag = false;
       return this;
     },
     addToLayer: function addToLayer(layer) {
-      this.addToContainer(layer);
+      if (!IsLayerGameObject(layer)) {
+        return this;
+      }
+      AddToContainer.call(this, layer);
       return this;
     },
     removeFromContainer: function removeFromContainer() {
       if (!this.parentContainer) {
         return this;
       }
-
-      // Will add gameObjects to scene
-      var gameObjects = this.getAllChildren([this]).filter(function (gameObject) {
-        return !!gameObject.scene;
-      });
-      if (gameObjects.length === 0) {
+      this._setParentContainerFlag = true;
+      RemoveFromContainer.call(this, this.parentContainer, true, false);
+      this._setParentContainerFlag = false;
+      return this;
+    },
+    removeFromLayer: function removeFromLayer(addToScene) {
+      if (addToScene === undefined) {
+        addToScene = true;
+      }
+      if (!IsLayerGameObject(this.displayList)) {
         return this;
       }
-      this._setParentContainerFlag = true;
-      if (gameObjects.length > 1) {
-        SortGameObjectsByDepth(gameObjects);
-        gameObjects.reverse();
-      }
-      this.parentContainer.remove(gameObjects);
-      this._setParentContainerFlag = false;
+      RemoveFromContainer.call(this, this.displayList, false, addToScene);
       return this;
     },
     getParentContainer: function getParentContainer() {
@@ -1459,7 +1526,7 @@
       return null;
     },
     addToParentContainer: function addToParentContainer(gameObject) {
-      // Don't add to layer if gameObject is not in any displayList
+      // Do nothing if gameObject is not in any displayList
       if (!gameObject.displayList) {
         return this;
       }
@@ -1478,7 +1545,7 @@
     }
   };
 
-  var Layer = {
+  var RenderLayer = {
     hasLayer: function hasLayer() {
       return !!this.privateRenderLayer;
     },
@@ -1548,7 +1615,13 @@
       if (!layer) {
         return this;
       }
-      layer.remove(gameObject);
+      if (gameObject.isRexContainerLite) {
+        // Remove containerLite and its children
+        gameObject.removeFromLayer(true);
+      } else {
+        // Remove gameObject directly
+        layer.remove(gameObject);
+      }
       state.layer = null;
       return this;
     }
@@ -1572,7 +1645,7 @@
   var Rectangle$5 = Phaser.Geom.Rectangle;
   var Vector2 = Phaser.Math.Vector2;
   var RotateAround$4 = Phaser.Math.RotateAround;
-  var GetBounds$1 = function GetBounds(gameObject, output) {
+  var GetBounds = function GetBounds(gameObject, output) {
     if (output === undefined) {
       output = new Rectangle$5();
     } else if (output === true) {
@@ -1728,7 +1801,7 @@
       if (!gameObject.getBounds) {
         continue;
       }
-      var boundsRect = GetBounds$1(gameObject, true);
+      var boundsRect = GetBounds(gameObject, true);
       if (firstClone) {
         out.setTo(boundsRect.x, boundsRect.y, boundsRect.width, boundsRect.height);
         firstClone = false;
@@ -2032,7 +2105,7 @@
     changeOrigin: ChangeOrigin,
     drawBounds: DrawBounds$1
   };
-  Object.assign(methods$e, Parent, AddChild$3, RemoveChild$2, ChildState, Transform, Position, Rotation, Scale$1, Visible, Alpha, Active, ScrollFactor, Mask, Depth, Children, Tween, P3Container, Layer, RenderTexture$1);
+  Object.assign(methods$e, Parent, AddChild$3, RemoveChild$2, ChildState, Transform, Position, Rotation, Scale$1, Visible, Alpha, Active, ScrollFactor, Mask, Depth, Children, Tween, P3Container, RenderLayer, RenderTexture$1);
 
   var ContainerLite = /*#__PURE__*/function (_Base) {
     _inherits(ContainerLite, _Base);
@@ -2751,7 +2824,7 @@
     for (var i = 0, cnt = children.length; i < cnt; i++) {
       child = children[i];
       if (child.getBounds || child.width !== undefined && child.height !== undefined) {
-        GlobRect = GetBounds$1(child, GlobRect);
+        GlobRect = GetBounds(child, GlobRect);
       } else {
         continue;
       }
@@ -2839,20 +2912,6 @@
     }
   };
 
-  var RemoveItem$6 = Phaser.Utils.Array.Remove;
-  var ContainerRemove = ContainerLite.prototype.remove;
-  var RemoveChild$1 = function RemoveChild(gameObject, destroyChild) {
-    if (this.isBackground(gameObject)) {
-      RemoveItem$6(this.backgroundChildren, gameObject);
-    }
-    ContainerRemove.call(this, gameObject, destroyChild);
-    if (!destroyChild && this.sizerEventsEnable) {
-      gameObject.emit('sizer.remove', gameObject, this);
-      this.emit('remove', gameObject, this);
-    }
-    return this;
-  };
-
   var GetParent = function GetParent(gameObject, name) {
     var parent = null;
     if (name === undefined) {
@@ -2924,10 +2983,34 @@
     }
   };
 
+  var RemoveItem$6 = Phaser.Utils.Array.Remove;
+  var ContainerRemove = ContainerLite.prototype.remove;
+  var GetParentSizer$1 = GetParentSizerMethods.getParentSizer;
+  var RemoveChild$1 = function RemoveChild(gameObject, destroyChild) {
+    // Invoke parent's removeChildCallback method
+    var parent = GetParentSizer$1(gameObject);
+    while (parent) {
+      if (parent.removeChildCallback) {
+        parent.removeChildCallback(gameObject, destroyChild);
+      }
+      parent = GetParentSizer$1(parent);
+    }
+    if (this.isBackground(gameObject)) {
+      RemoveItem$6(this.backgroundChildren, gameObject);
+    }
+    ContainerRemove.call(this, gameObject, destroyChild);
+    if (!destroyChild && this.sizerEventsEnable) {
+      gameObject.emit('sizer.remove', gameObject, this);
+      this.emit('remove', gameObject, this);
+    }
+    return this;
+  };
+
   var RemoveItem$5 = Phaser.Utils.Array.Remove;
+  var GetParentSizer = GetParentSizerMethods.getParentSizer;
   var RemoveChildMethods$7 = {
     removeFromParentSizer: function removeFromParentSizer() {
-      var parent = GetParentSizerMethods.getParentSizer(gameObject);
+      var parent = GetParentSizer(gameObject);
       if (parent) {
         parent.remove(this);
       }
@@ -3020,6 +3103,26 @@
     }
   };
   var RE_OBJ = /(\S+)\[(\d+)\]/i;
+
+  var GetChildIndex = function GetChildIndex(child) {
+    if (Array.isArray(this.sizerChildren)) {
+      var index = this.sizerChildren.indexOf(child);
+      if (index === -1) {
+        index = null;
+      }
+      return index;
+    } else {
+      if (this.getParentSizer(child) !== this) {
+        return null;
+      }
+      for (var key in this.sizerChildren) {
+        if (this.sizerChildre[key] === child) {
+          return key;
+        }
+      }
+      return null;
+    }
+  };
 
   var GetValue$1o = Phaser.Utils.Objects.GetValue;
   var GetPadding$1 = function GetPadding(padding, key) {
@@ -3276,6 +3379,10 @@
     // Run layout with scale = 1
     this.runLayout();
 
+    // Custom postLayout callback
+    this.postLayout();
+    this._postLayout();
+
     // Restore scale
     if (!scale1) {
       this.setScale(scaleXSave, scaleYSave);
@@ -3323,16 +3430,21 @@
       this.emit('postlayout', this.layoutedChildren, this);
       this.layoutedChildren.length = 0;
     }
-    return this.postLayout();
+    return this;
   };
 
   // Override
   var LayoutChildren$5 = function LayoutChildren() {};
 
-  var PostLayout = function PostLayout(parent, newWidth, newHeight) {
+  var _PostLayout = function _PostLayout(parent, newWidth, newHeight) {
     if (this._anchor) {
       this._anchor.updatePosition();
     }
+    return this;
+  };
+
+  // Override
+  var PostLayout = function PostLayout(parent, newWidth, newHeight) {
     return this;
   };
 
@@ -4708,7 +4820,7 @@
     return WaitEvent(eventEmitter, 'complete');
   };
 
-  var IsPlainObject$m = Phaser.Utils.Objects.IsPlainObject;
+  var IsPlainObject$n = Phaser.Utils.Objects.IsPlainObject;
   var OnInitScale = function OnInitScale(gameObject, scale) {
     // Route 'complete' of scale to gameObject
     scale.completeEventName = undefined;
@@ -4729,7 +4841,7 @@
   };
   var ScaleMethods = {
     popUp: function popUp(duration, orientation, ease) {
-      if (IsPlainObject$m(duration)) {
+      if (IsPlainObject$n(duration)) {
         var config = duration;
         duration = config.duration;
         orientation = config.orientation;
@@ -4748,7 +4860,7 @@
       return WaitComplete(this._scaleBehavior);
     },
     scaleDownDestroy: function scaleDownDestroy(duration, orientation, ease, destroyMode) {
-      if (IsPlainObject$m(duration)) {
+      if (IsPlainObject$n(duration)) {
         var config = duration;
         duration = config.duration;
         orientation = config.orientation;
@@ -4776,7 +4888,7 @@
       return WaitComplete(this._scaleBehavior);
     },
     scaleYoyo: function scaleYoyo(duration, peakValue, repeat, orientation, ease) {
-      if (IsPlainObject$m(duration)) {
+      if (IsPlainObject$n(duration)) {
         var config = duration;
         duration = config.duration;
         peakValue = config.peakValue;
@@ -4881,10 +4993,10 @@
     yoyo: 2
   };
 
-  var IsPlainObject$l = Phaser.Utils.Objects.IsPlainObject;
+  var IsPlainObject$m = Phaser.Utils.Objects.IsPlainObject;
   var FadeIn = function FadeIn(gameObject, duration, alpha, fade) {
     var startAlpha, endAlpha;
-    if (IsPlainObject$l(alpha)) {
+    if (IsPlainObject$m(alpha)) {
       startAlpha = alpha.start;
       endAlpha = alpha.end;
     } else {
@@ -4933,7 +5045,7 @@
     return fade;
   };
 
-  var IsPlainObject$k = Phaser.Utils.Objects.IsPlainObject;
+  var IsPlainObject$l = Phaser.Utils.Objects.IsPlainObject;
   var OnInitFade = function OnInitFade(gameObject, fade) {
     // Route 'complete' of fade to gameObject
     fade.completeEventName = undefined;
@@ -4954,7 +5066,7 @@
   };
   var FadeMethods = {
     fadeIn: function fadeIn(duration, alpha) {
-      if (IsPlainObject$k(duration)) {
+      if (IsPlainObject$l(duration)) {
         var config = duration;
         duration = config.duration;
         alpha = config.alpha;
@@ -4972,7 +5084,7 @@
       return WaitComplete(this._fade);
     },
     fadeOutDestroy: function fadeOutDestroy(duration, destroyMode) {
-      if (IsPlainObject$k(duration)) {
+      if (IsPlainObject$l(duration)) {
         var config = duration;
         duration = config.duration;
         destroyMode = config.destroy;
@@ -5191,7 +5303,7 @@
     return easeMove;
   };
 
-  var IsPlainObject$j = Phaser.Utils.Objects.IsPlainObject;
+  var IsPlainObject$k = Phaser.Utils.Objects.IsPlainObject;
   var DistanceBetween$5 = Phaser.Math.Distance.Between;
   var OnInitEaseMove = function OnInitEaseMove(gameObject, easeMove) {
     // Route 'complete' of easeMove to gameObject
@@ -5213,7 +5325,7 @@
   };
   var EaseMoveMethods = {
     moveFrom: function moveFrom(duration, x, y, ease, destroyMode) {
-      if (IsPlainObject$j(duration)) {
+      if (IsPlainObject$k(duration)) {
         var config = duration;
         x = config.x;
         y = config.y;
@@ -5245,7 +5357,7 @@
       return WaitComplete(this._easeMove);
     },
     moveTo: function moveTo(duration, x, y, ease, destroyMode) {
-      if (IsPlainObject$j(duration)) {
+      if (IsPlainObject$k(duration)) {
         var config = duration;
         x = config.x;
         y = config.y;
@@ -5536,7 +5648,7 @@
     decay: 1
   };
 
-  var IsPlainObject$i = Phaser.Utils.Objects.IsPlainObject;
+  var IsPlainObject$j = Phaser.Utils.Objects.IsPlainObject;
   var OnInitShake = function OnInitShake(gameObject, shake) {
     // Route 'complete' of shake to gameObject
     shake.on('complete', function () {
@@ -5548,7 +5660,7 @@
 
   var ShakeMethods = {
     shake: function shake(duration, magnitude, magnitudeMode) {
-      if (IsPlainObject$i(duration)) {
+      if (IsPlainObject$j(duration)) {
         var config = duration;
         duration = config.duration;
         magnitude = config.magnitude;
@@ -5627,7 +5739,7 @@
     return EaseValueTask;
   }(EaseValueTaskBase);
 
-  var IsPlainObject$h = Phaser.Utils.Objects.IsPlainObject;
+  var IsPlainObject$i = Phaser.Utils.Objects.IsPlainObject;
   var EaseData = /*#__PURE__*/function (_ComponentBase) {
     _inherits(EaseData, _ComponentBase);
     var _super = _createSuper(EaseData);
@@ -5661,7 +5773,7 @@
     }, {
       key: "easeTo",
       value: function easeTo(key, value, duration, ease) {
-        if (IsPlainObject$h(key)) {
+        if (IsPlainObject$i(key)) {
           var config = key;
           key = config.key;
           value = config.value;
@@ -5690,7 +5802,7 @@
     }, {
       key: "easeFrom",
       value: function easeFrom(key, value, duration, ease) {
-        if (IsPlainObject$h(key)) {
+        if (IsPlainObject$i(key)) {
           var config = key;
           key = config.key;
           value = config.value;
@@ -7273,7 +7385,7 @@
     if (preTest && !preTest(gameObject, x, y)) {
       return false;
     }
-    var boundsRect = GetBounds$1(gameObject, true);
+    var boundsRect = GetBounds(gameObject, true);
     if (!boundsRect.contains(x, y)) {
       return false;
     }
@@ -7761,42 +7873,57 @@
     }
   };
 
-  var SetDraggable = function SetDraggable(senser, draggable) {
-    var senserType = _typeof(senser);
-    if (senserType === 'string') {
-      var senserName = senser;
-      senser = this.getElement(senserName);
-      if (!senser) {
-        console.error("Can get element '".concat(senserName, "'"));
+  var IsPlainObject$h = Phaser.Utils.Objects.IsPlainObject;
+  var SetDraggable = function SetDraggable(sensor, draggable, dragTarget) {
+    if (IsPlainObject$h(sensor)) {
+      var config = sensor;
+      sensor = config.sensor;
+      dragTarget = config.target;
+      draggable = config.draggable;
+    } else {
+      if (typeof draggable !== 'boolean') {
+        dragTarget = draggable;
+        draggable = undefined;
+      }
+    }
+    var sensorType = _typeof(sensor);
+    if (sensorType === 'string') {
+      var sensorName = sensor;
+      sensor = this.getElement(sensorName);
+      if (!sensor) {
+        console.error("Can get element '".concat(sensorName, "'"));
         return this;
       }
-    } else if (senser === undefined || senserType != 'object') {
-      draggable = senser;
-      senser = this;
+    } else if (sensor === undefined || sensorType != 'object') {
+      draggable = sensor;
+      sensor = this;
     }
     if (draggable === undefined) {
       draggable = true;
     }
-    if (senser.input && senser.input._dragTopmostSizer) {
+    if (sensor.input && sensor.input._rexUIDragSizer) {
       // Draggable is already registered
-      senser.input.draggable = draggable;
+      sensor.input.draggable = draggable;
     } else if (draggable) {
       // Register draggable
-      senser.setInteractive();
-      senser.scene.input.setDraggable(senser);
-      senser.on('drag', function (pointer, dragX, dragY) {
-        var topmostParent = this.getTopmostSizer();
-        topmostParent.x += dragX - senser.x;
-        topmostParent.y += dragY - senser.y;
-        topmostParent.emit('sizer.drag', pointer, dragX, dragY);
+      sensor.setInteractive();
+      sensor.scene.input.setDraggable(sensor);
+      sensor.on('drag', function (pointer, dragX, dragY) {
+        var currentDragTarget = dragTarget === undefined ? this.getTopmostSizer() : dragTarget;
+        currentDragTarget.x += dragX - sensor.x;
+        currentDragTarget.y += dragY - sensor.y;
+        currentDragTarget.emit('sizer.drag', pointer, dragX, dragY);
       }, this).on('dragstart', function (pointer, dragX, dragY) {
-        var topmostParent = this.getTopmostSizer();
-        topmostParent.emit('sizer.dragstart', pointer, dragX, dragY);
+        var currentDragTarget = dragTarget === undefined ? this.getTopmostSizer() : dragTarget;
+        currentDragTarget.emit('sizer.dragstart', pointer, dragX, dragY);
       }, this).on('dragend', function (pointer, dragX, dragY, dropped) {
-        var topmostParent = this.getTopmostSizer();
-        topmostParent.emit('sizer.dragend', pointer, dragX, dragY, dropped);
-      }, this);
-      senser.input._dragTopmostSizer = true;
+        var currentDragTarget = dragTarget === undefined ? this.getTopmostSizer() : dragTarget;
+        currentDragTarget.emit('sizer.dragend', pointer, dragX, dragY, dropped);
+      }, this).on('drop', function (pointer, dropZone) {
+        var currentDragTarget = dragTarget === undefined ? this.getTopmostSizer() : dragTarget;
+        currentDragTarget.emit('sizer.drop', pointer, dropZone);
+      });
+      sensor.input._rexUIDragSizer = true;
     } else ;
     return this;
   };
@@ -10178,6 +10305,9 @@
   var GetValue$U = Phaser.Utils.Objects.GetValue;
   var SetChildrenInteractive$1 = function SetChildrenInteractive(gameObject, config) {
     gameObject.setInteractive();
+    if (GetValue$U(config, 'dropZone', false)) {
+      gameObject.input.dropZone = true;
+    }
     gameObject._childrenInteractive = {
       targetSizers: GetValue$U(config, 'targets', [gameObject]),
       eventEmitter: GetValue$U(config, 'eventEmitter', gameObject),
@@ -10226,6 +10356,7 @@
     addElement: AddChildrenMap,
     removeChildrenMap: RemoveChildrenMap,
     getElement: GetElement,
+    getChildIndex: GetChildIndex,
     getAllChildrenSizers: GetAllChildrenSizers,
     getChildrenSizers: GetChildrenSizers$4,
     preLayout: PreLayout$4,
@@ -10235,6 +10366,7 @@
     runWidthWrap: RunWidthWrap$2,
     layoutBackgrounds: LayoutBackgrounds,
     postLayout: PostLayout,
+    _postLayout: _PostLayout,
     setAnchor: SetAnchor,
     isInTouching: IsInTouching,
     pointToChild: PointToChild$1,
@@ -10460,43 +10592,43 @@
     }, {
       key: "innerLeft",
       get: function get() {
-        return this.left + this.space.left;
+        return this.left + this.space.left * this.scaleX;
       }
     }, {
       key: "innerRight",
       get: function get() {
-        return this.right - this.space.right;
+        return this.right - this.space.right * this.scaleX;
       }
     }, {
       key: "innerTop",
       get: function get() {
-        return this.top + this.space.top;
+        return this.top + this.space.top * this.scaleY;
       }
     }, {
       key: "innerBottom",
       get: function get() {
-        return this.bottom - this.space.bottom;
+        return this.bottom - this.space.bottom * this.scaleY;
       }
     }, {
       key: "innerWidth",
       get: function get() {
-        return this.width - this.space.left - this.space.right;
+        return (this.width - this.space.left - this.space.right) * this.scaleX;
       }
     }, {
       key: "innerHeight",
       get: function get() {
-        return this.height - this.space.top - this.space.bottom;
+        return (this.height - this.space.top - this.space.bottom) * this.scaleY;
       }
     }, {
       key: "minInnerWidth",
       get: function get() {
-        var result = this.minWidth - this.space.left - this.space.right;
+        var result = (this.minWidth - this.space.left - this.space.right) * this.scaleX;
         return Math.max(result, 0);
       }
     }, {
       key: "minInnerHeight",
       get: function get() {
-        var result = this.minHeight - this.space.top - this.space.bottom;
+        var result = (this.minHeight - this.space.top - this.space.bottom) * this.scaleY;
         return Math.max(result, 0);
       }
     }]);
@@ -11787,6 +11919,10 @@
   };
 
   var FireEvent$1 = function FireEvent(eventName, button) {
+    if (!this.buttons) {
+      // ButtonGroup has been destroyed
+      return;
+    }
     var index;
     if (typeof button === 'number') {
       index = button;
@@ -14578,7 +14714,7 @@
           return this;
         }
         imageObject.setTexture(key, frame);
-        if (this.iconWidth !== undefined) {
+        if (this.iconWidth !== undefined && this.iconHeight !== undefined) {
           SetDisplaySize(imageObject, this.iconWidth, this.iconHeight);
           this.resetChildScaleState(imageObject);
         }
@@ -14626,7 +14762,7 @@
           return this;
         }
         imageObject.setTexture(key, frame);
-        if (this.actionWidth !== undefined) {
+        if (this.actionWidth !== undefined && this.actionHeight !== undefined) {
           SetDisplaySize(imageObject, this.actionWidth, this.actionHeight);
           this.resetChildScaleState(imageObject);
         }
@@ -14664,22 +14800,18 @@
       key: "preLayout",
       value: function preLayout() {
         var icon = this.childrenMap.icon;
-        if (icon && this.iconWidth !== undefined) {
+        if (icon && this.iconWidth !== undefined && this.iconHeight !== undefined) {
           SetDisplaySize(icon, this.iconWidth, this.iconHeight);
         }
         var action = this.childrenMap.action;
-        if (action && this.actionWidth !== undefined) {
+        if (action && this.actionWidth !== undefined && this.actionHeight !== undefined) {
           SetDisplaySize(action, this.actionWidth, this.actionHeight);
         }
         _get(_getPrototypeOf(LabelBase.prototype), "preLayout", this).call(this);
       }
     }, {
-      key: "runLayout",
-      value: function runLayout(parent, newWidth, newHeight) {
-        if (this.ignoreLayout) {
-          return this;
-        }
-        _get(_getPrototypeOf(LabelBase.prototype), "runLayout", this).call(this, parent, newWidth, newHeight);
+      key: "postLayout",
+      value: function postLayout(parent, newWidth, newHeight) {
         // Pin icon-mask to icon game object
         var iconMask = this.childrenMap.iconMask;
         if (iconMask) {
@@ -19137,6 +19269,17 @@
         if (setDefaults === undefined) {
           setDefaults = false;
         }
+
+        // Compatible with Text game object
+        if (style && style.hasOwnProperty('wordWrap')) {
+          var wordWrap = style.wordWrap;
+          if (wordWrap.hasOwnProperty('width')) {
+            style.wrap = {
+              mode: 'word',
+              width: wordWrap.width
+            };
+          }
+        }
         if (style && style.hasOwnProperty('wrap')) {
           var wrap = style.wrap;
           if (wrap.hasOwnProperty('mode')) {
@@ -19923,7 +20066,7 @@
       // Underline
       if (curStyle.underlineThickness > 0 && pen.width > 0) {
         var lineOffsetY = offsetY + curStyle.underlineOffset - curStyle.underlineThickness / 2;
-        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.underlineThickness, curStyle.underlineColor);
+        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.underlineThickness, curStyle.underlineColor, curStyle);
       }
 
       // Text
@@ -19939,7 +20082,7 @@
       // Strikethrough
       if (curStyle.strikethroughThickness > 0 && pen.width > 0) {
         var lineOffsetY = offsetY + curStyle.strikethroughOffset - curStyle.strikethroughThickness / 2;
-        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.strikethroughThickness, curStyle.strikethroughColor);
+        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.strikethroughThickness, curStyle.strikethroughColor, curStyle);
       }
       context.restore();
       if (pen.hasAreaMarker && pen.width > 0) {
@@ -19971,12 +20114,13 @@
       var canvas = this.canvas;
       this.context.clearRect(0, 0, canvas.width, canvas.height);
     },
-    drawLine: function drawLine(x, y, width, height, color) {
+    drawLine: function drawLine(x, y, width, height, color, style) {
       if (this.autoRound) {
         x = Math.round(x);
         y = Math.round(y);
       }
       var context = this.context;
+      style.syncShadow(context, style.shadowStroke);
       var savedLineCap = context.lineCap;
       context.lineCap = 'butt';
       context.strokeStyle = color;
@@ -20303,15 +20447,18 @@
     }, {
       key: "getSliceTagText",
       value: function getSliceTagText(start, end, wrap) {
-        if (start === undefined) {
-          start = 0;
+        var lastPen = this.lastPen;
+        if (lastPen == null) {
+          return '';
         }
-        if (end === undefined) {
-          var lastPen = this.lastPen;
-          if (lastPen == null) {
-            return "";
-          }
-          end = lastPen.endIndex;
+        var lastPenEnd = lastPen.endIndex;
+        if (start === undefined || start === 0) {
+          // Image pen before first character
+          start = -1;
+        }
+        if (end === undefined || end === lastPenEnd) {
+          // Image pen after last character
+          end = lastPenEnd + 1;
         }
         if (wrap === undefined) {
           wrap = false;
@@ -21583,17 +21730,33 @@
     }, {
       key: "getWrappedText",
       value: function getWrappedText(text, start, end) {
+        if (typeof text === 'number') {
+          end = start;
+          start = text;
+          text = undefined;
+        }
         text = this.canvasText.getText(text, start, end, true);
         return text.split(SPLITREGEXP);
       }
     }, {
       key: "getPlainText",
       value: function getPlainText(text, start, end) {
+        if (typeof text === 'number') {
+          end = start;
+          start = text;
+          text = undefined;
+        }
         return this.canvasText.getPlainText(text, start, end);
       }
     }, {
       key: "getText",
       value: function getText(text, start, end, wrap) {
+        if (typeof text === 'number') {
+          wrap = end;
+          end = start;
+          start = text;
+          text = undefined;
+        }
         if (wrap === undefined) {
           wrap = false;
         }
@@ -21602,6 +21765,11 @@
     }, {
       key: "getSubString",
       value: function getSubString(text, start, end) {
+        if (typeof text === 'number') {
+          end = start;
+          start = text;
+          text = undefined;
+        }
         return this.getText(text, start, end);
       }
     }, {
@@ -22796,18 +22964,18 @@
       return false;
     }
     var bobPosition = CanvasPositionToBobPosition(canvasX, canvasY, this, true);
-    return GetBounds(this).contains(bobPosition.x, bobPosition.y);
+    return GetBobBounds(this).contains(bobPosition.x, bobPosition.y);
   };
-  var GetBounds = function GetBounds(bob) {
-    if (globBounds === undefined) {
-      globBounds = new Rectangle();
+  var GetBobBounds = function GetBobBounds(bob) {
+    if (bobBounds === undefined) {
+      bobBounds = new Rectangle();
     }
     var x = bob.drawTLX,
       y = bob.drawTLY;
-    globBounds.setTo(x, y, bob.drawTRX - x, bob.drawBLY - y);
-    return globBounds;
+    bobBounds.setTo(x, y, bob.drawTRX - x, bob.drawBLY - y);
+    return bobBounds;
   };
-  var globBounds;
+  var bobBounds;
 
   var RotateAround = Phaser.Math.RotateAround;
   var BobPositionToCanvasPosition = function BobPositionToCanvasPosition(bob, bobX, bobY, out) {
@@ -22892,6 +23060,8 @@
       _classCallCheck(this, RenderBase);
       _this = _super.call(this, parent, type);
       _this.renderable = true;
+      _this.scrollFactorX = 1;
+      _this.scrollFactorY = 1;
       _this.toLocalPosition = true;
       _this.originX = 0;
       _this.offsetX = 0; // Override
@@ -22973,6 +23143,28 @@
       value: function setInitialPosition(x, y) {
         this.x0 = x;
         this.y0 = y;
+        return this;
+      }
+    }, {
+      key: "setScrollFactorX",
+      value: function setScrollFactorX(x) {
+        this.scrollFactorX = x;
+        return this;
+      }
+    }, {
+      key: "setScrollFactorY",
+      value: function setScrollFactorY(y) {
+        this.scrollFactorY = y;
+        return this;
+      }
+    }, {
+      key: "setScrollFactor",
+      value: function setScrollFactor(x, y) {
+        if (y === undefined) {
+          y = x;
+        }
+        this.scrollFactorX = x;
+        this.scrollFactorY = y;
         return this;
       }
     }, {
@@ -23220,12 +23412,14 @@
     }, {
       key: "drawX",
       get: function get() {
-        return this.x + this.leftSpace + this.offsetX - this.originX * this.width;
+        var x = this.x + this.leftSpace + this.offsetX - this.originX * this.width;
+        return this.parent._textOX * this.scrollFactorX + x;
       }
     }, {
       key: "drawY",
       get: function get() {
-        return this.y + this.offsetY;
+        var y = this.y + this.offsetY;
+        return this.parent._textOY * this.scrollFactorY + y;
       }
 
       // Override
@@ -23300,6 +23494,7 @@
       var _this;
       _classCallCheck(this, Background);
       _this = _super.call(this, parent, 'background');
+      _this.setScrollFactor(0);
       _this.setColor(GetValue$n(config, 'color', null), GetValue$n(config, 'color2', null), GetValue$n(config, 'horizontalGradient', true));
       _this.setStroke(GetValue$n(config, 'stroke', null), GetValue$n(config, 'strokeThickness', 2));
       _this.setCornerRadius(GetValue$n(config, 'cornerRadius', 0), GetValue$n(config, 'cornerIteration', null));
@@ -23439,6 +23634,7 @@
       var _this;
       _classCallCheck(this, InnerBounds);
       _this = _super.call(this, parent, 'innerbounds');
+      _this.setScrollFactor(0);
       _this.setColor(GetValue$m(config, 'color', null), GetValue$m(config, 'color2', null), GetValue$m(config, 'horizontalGradient', true));
       _this.setStroke(GetValue$m(config, 'stroke', null), GetValue$m(config, 'strokeThickness', 2));
       return _this;
@@ -23940,13 +24136,13 @@
     if (height === undefined) {
       height = 0;
     }
-    var dirty = this.fixedWidth !== width || this.fixedHeight !== height;
-    if (!dirty) {
+    if (this.fixedWidth === width && this.fixedHeight === height) {
       return this;
     }
     this.fixedWidth = width;
     this.fixedHeight = height;
-    this.dirty = true;
+    this.dirty = true; // -> this.updateTexture();
+
     this.setCanvasSize(width > 0 ? width : this.width, height > 0 ? height : this.height);
     return this;
   };
@@ -24827,6 +25023,35 @@
     return this;
   };
 
+  var CreateWrapResultData = function CreateWrapResultData(config) {
+    var data = {
+      callback: undefined,
+      start: 0,
+      // Next start index
+      isLastPage: false,
+      // Is last page
+      maxLines: undefined,
+      padding: undefined,
+      letterSpacing: undefined,
+      hAlign: undefined,
+      vAlign: undefined,
+      children: [],
+      // Wrap result
+      lines: [],
+      // Wrap result in lines
+
+      // WordWrap
+      maxLineWidth: 0,
+      linesHeight: 0,
+      lineHeight: undefined,
+      // VerticalWrap
+      maxLineHeight: 0,
+      linesWidth: 0,
+      lineWidth: undefined
+    };
+    return Object.assign(data, config);
+  };
+
   var GetWord = function GetWord(children, startIndex, charMode, result) {
     if (result === undefined) {
       result = {
@@ -25023,28 +25248,22 @@
     var hAlign = GetValue$k(config, 'hAlign', 0);
     var vAlign = GetValue$k(config, 'vAlign', 0);
     var charWrap = GetValue$k(config, 'charWrap', false);
-    var result = {
+    var result = CreateWrapResultData({
+      // Override properties
       callback: 'runWordWrap',
       start: startIndex,
       // Next start index
-      isLastPage: false,
-      // Is last page
       padding: this.wrapPadding,
-      ascent: ascent,
-      lineHeight: lineHeight,
-      maxLines: maxLines,
-      wrapWidth: wrapWidth,
       letterSpacing: letterSpacing,
+      maxLines: maxLines,
       hAlign: hAlign,
       vAlign: vAlign,
-      charWrap: charWrap,
-      children: [],
-      // Word-wrap result
-      lines: [],
-      // Word-wrap result in lines
-      maxLineWidth: 0,
-      linesHeight: 0
-    };
+      // Specific properties
+      ascent: ascent,
+      lineHeight: lineHeight,
+      wrapWidth: wrapWidth,
+      charWrap: charWrap
+    });
 
     // Set all children to inactive
     var children = this.children;
@@ -25249,13 +25468,13 @@
 
     var showAllLines = maxLines === 0;
 
-    // Get fixedChildHeight
-    var fixedChildHeight = GetValue$j(config, 'fixedChildHeight', undefined);
-    if (fixedChildHeight === undefined) {
+    // Get fixedCharacterHeight
+    var fixedCharacterHeight = GetValue$j(config, 'fixedCharacterHeight', undefined);
+    if (fixedCharacterHeight === undefined) {
       var charPerLine = GetValue$j(config, 'charPerLine', undefined);
       if (charPerLine !== undefined) {
         var innerHeight = this.fixedHeight - paddingVertical;
-        fixedChildHeight = Math.floor(innerHeight / charPerLine);
+        fixedCharacterHeight = Math.floor(innerHeight / charPerLine);
       }
     }
 
@@ -25273,28 +25492,22 @@
     var rtl = GetValue$j(config, 'rtl', true);
     var hAlign = GetValue$j(config, 'hAlign', rtl ? 2 : 0);
     var vAlign = GetValue$j(config, 'vAlign', 0);
-    var result = {
+    var result = CreateWrapResultData({
+      // Override properties
       callback: 'runVerticalWrap',
       start: startIndex,
       // Next start index
-      isLastPage: false,
-      // Is last page
       padding: this.wrapPadding,
-      lineWidth: lineWidth,
-      maxLines: maxLines,
-      fixedChildHeight: fixedChildHeight,
-      wrapHeight: wrapHeight,
       letterSpacing: letterSpacing,
+      maxLines: maxLines,
       hAlign: hAlign,
       vAlign: vAlign,
-      rtl: rtl,
-      children: [],
-      // Word-wrap result
-      lines: [],
-      // Word-wrap result in lines
-      maxLineHeight: 0,
-      linesWidth: 0
-    };
+      // Specific properties
+      lineWidth: lineWidth,
+      fixedCharacterHeight: fixedCharacterHeight,
+      wrapHeight: wrapHeight,
+      rtl: rtl
+    });
 
     // Set all children to active
     var children = this.children;
@@ -25327,7 +25540,7 @@
         lastLine.push(child);
         continue;
       }
-      var childHeight = (fixedChildHeight !== undefined ? fixedChildHeight : child.height) + letterSpacing;
+      var childHeight = (fixedCharacterHeight !== undefined ? fixedCharacterHeight : child.height) + letterSpacing;
       // Next line
       var isNewLineChar = IsNewLineChar(child);
       var isPageBreakChar = IsPageBreakChar(child);
@@ -25429,6 +25642,43 @@
     },
     setHAlign: function setHAlign(align) {
       this.wrapConfig.hAlign = align;
+      return this;
+    }
+  };
+
+  var SetTextOXYMethods = {
+    setTextOX: function setTextOX(ox) {
+      if (ox === this._textOX) {
+        return this;
+      }
+      this._textOX = ox;
+      return this;
+    },
+    setTextOY: function setTextOY(oy) {
+      if (oy === this._textOY) {
+        return this;
+      }
+      this._textOY = oy;
+      return this;
+    },
+    setTextOXY: function setTextOXY(ox, oy) {
+      if (ox === this._textOX && oy === this._textOY) {
+        return;
+      }
+      this._textOX = ox;
+      this._textOY = oy;
+      return this;
+    },
+    addTextOX: function addTextOX(incX) {
+      this.setTextOX(this._textOX + incX);
+      return this;
+    },
+    addTextOY: function addTextOY(incY) {
+      this.setTextOY(this._textOY + incY);
+      return this;
+    },
+    addTextOXY: function addTextOXY(incX, incY) {
+      this.setTextOXY(this._textOX + incX, this._textOY + incY);
       return this;
     }
   };
@@ -25877,7 +26127,7 @@
     setChildrenInteractiveEnable: SetChildrenInteractiveEnable,
     setInteractive: SetInteractive
   };
-  Object.assign(Methods$3, MoveChildMethods, BackgroundMethods, InnerBoundsMethods, SetAlignMethods);
+  Object.assign(Methods$3, MoveChildMethods, BackgroundMethods, InnerBoundsMethods, SetAlignMethods, SetTextOXYMethods);
 
   var GetFastValue = Phaser.Utils.Objects.GetFastValue;
   var Pools = {};
@@ -25953,6 +26203,8 @@
       _this.defaultTextStyle = new TextStyle(null, textStyleConfig);
       _this.textStyle = _this.defaultTextStyle.clone();
       _this.setTestString(GetValue$h(config, 'testString', '|MÉqgy'));
+      _this._textOX = 0;
+      _this._textOY = 0;
       _this.background = new Background(_assertThisInitialized(_this), GetValue$h(config, 'background', undefined));
       _this.innerBounds = new InnerBounds(_assertThisInitialized(_this), GetValue$h(config, 'innerBounds', undefined));
       _this.children = [];
@@ -25989,6 +26241,22 @@
       value: function setSize(width, height) {
         this.setFixedSize(width, height);
         return this;
+      }
+    }, {
+      key: "textOX",
+      get: function get() {
+        return this._textOX;
+      },
+      set: function set(value) {
+        this.setTextOX(value);
+      }
+    }, {
+      key: "textOY",
+      get: function get() {
+        return this._textOY;
+      },
+      set: function set(value) {
+        this.setTextOY(value);
       }
     }]);
     return DynamicText;
@@ -26354,7 +26622,9 @@
       var childSpace = GetValue$f(config, 'space.child', 0);
       topPatent.childMargin = {};
       var childMargin = topPatent.childMargin;
+      var childPadding = {};
       if (typeof childSpace === 'number') {
+        // Legacy, add childSpace to slider
         switch (topPatent.scrollMode) {
           case 0:
           case 1:
@@ -26375,14 +26645,14 @@
           case 0:
             childMargin.top = GetValue$f(childSpace, 'top', 0);
             childMargin.bottom = GetValue$f(childSpace, 'bottom', 0);
-            childMargin.left = 0;
-            childMargin.right = 0;
+            childPadding.left = GetValue$f(childSpace, 'left', 0);
+            childPadding.right = GetValue$f(childSpace, 'right', 0);
             break;
           case 1:
             childMargin.top = GetValue$f(childSpace, 'left', 0);
             childMargin.bottom = GetValue$f(childSpace, 'right', 0);
-            childMargin.left = 0;
-            childMargin.right = 0;
+            childPadding.top = GetValue$f(childSpace, 'top', 0);
+            childPadding.bottom = GetValue$f(childSpace, 'bottom', 0);
             break;
           default:
             // 2
@@ -26397,6 +26667,7 @@
         column: 1,
         row: 1,
         align: GetValue$f(childConfig, 'align', 'center'),
+        padding: childPadding,
         expand: {
           width: GetValue$f(childConfig, 'expandWidth', true),
           // Private
@@ -26898,13 +27169,8 @@
         }
       }
     }, {
-      key: "runLayout",
-      value: function runLayout(parent, newWidth, newHeight) {
-        // Skip hidden or !dirty sizer
-        if (this.ignoreLayout) {
-          return this;
-        }
-        _get(_getPrototypeOf(Slider.prototype), "runLayout", this).call(this, parent, newWidth, newHeight);
+      key: "postLayout",
+      value: function postLayout(parent, newWidth, newHeight) {
         this.updateThumb();
         this.updateIndicator();
         return this;
@@ -28083,7 +28349,7 @@
       // this.parent = gameObject;
 
       if (_this.parent !== _this.scene) {
-        _this.focusMode = GetValue$8(config, 'focus', false);
+        _this.focusMode = GetValue$8(config, 'focus', true);
       } else {
         _this.focusMode = false;
       }
@@ -28186,25 +28452,6 @@
           } else {
             // Legacy
             sliderPadding = GetValue$7(config, 'space.child', 0);
-            if (typeof sliderPadding !== 'number') {
-              if (isAxisY) {
-                if (sliderPosition === 0) {
-                  // right
-                  sliderPadding = GetValue$7(sliderPadding, 'right', 0);
-                } else {
-                  // left
-                  sliderPadding = GetValue$7(sliderPadding, 'left', 0);
-                }
-              } else {
-                if (sliderPosition === 0) {
-                  // bottom
-                  sliderPadding = GetValue$7(sliderPadding, 'bottom', 0);
-                } else {
-                  // top
-                  sliderPadding = GetValue$7(sliderPadding, 'top', 0);
-                }
-              }
-            }
           }
         }
       }
@@ -28343,11 +28590,19 @@
     var parentMinWidth = GetValue$6(config, 'width');
     var parentMinHeight = GetValue$6(config, 'height');
     if (!parentMinWidth) {
-      columnProportions[1] = 0;
+      var expandChildWidth = GetValue$6(config, 'child.expandWidth', true);
+      if (!expandChildWidth) {
+        columnProportions[1] = 0; // Calculate parent's width by child's width
+      }
     }
+
     if (!parentMinHeight) {
-      rowProportions[1] = 0;
+      var expandChildHeight = GetValue$6(config, 'child.expandHeight', true);
+      if (!expandChildHeight) {
+        rowProportions[1] = 0; // Calculate parent's height by child's height
+      }
     }
+
     var scrollableSizer = new GridSizer(scene, {
       column: 3,
       row: 3,
@@ -28660,13 +28915,8 @@
       return _this;
     }
     _createClass(Scrollable, [{
-      key: "runLayout",
-      value: function runLayout(parent, newWidth, newHeight) {
-        // Skip hidden or !dirty sizer
-        if (this.ignoreLayout) {
-          return this;
-        }
-        _get(_getPrototypeOf(Scrollable.prototype), "runLayout", this).call(this, parent, newWidth, newHeight);
+      key: "postLayout",
+      value: function postLayout(parent, newWidth, newHeight) {
         this.resizeController();
 
         // Set t, s to 0 at first runLayout()
@@ -29704,7 +29954,6 @@
     }
   };
 
-  Phaser.Math.Clamp;
   var ScrollMethods = {
     scrollToLine: function scrollToLine(lineIndex) {
       this.setChildOY(-this.lineHeight * lineIndex);
@@ -29730,7 +29979,6 @@
       if (config === undefined) {
         config = {};
       }
-      config.scrollMode = 0;
 
       // Create text-block
       var textObject = GetValue$3(config, 'text', undefined);
@@ -29788,12 +30036,14 @@
     }, {
       key: "linesCount",
       get: function get() {
-        return this.childrenMap.child.linesCount;
+        var textBlock = this.childrenMap.child;
+        return textBlock.linesCount;
       }
     }, {
       key: "contentHeight",
       get: function get() {
-        return this.childrenMap.child.textHeight;
+        var textBlock = this.childrenMap.child;
+        return textBlock.textHeight;
       }
     }]);
     return TextArea;

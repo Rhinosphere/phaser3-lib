@@ -146,7 +146,7 @@ var textArea = scene.rexUI.add.textArea({
 
     mouseWheelScroller: false,
     // mouseWheelScroller: {
-    //     focus: false,
+    //     focus: true,
     //     speed: 0.1
     // },
 
@@ -255,8 +255,8 @@ var textArea = scene.rexUI.add.textArea({
     - Set to `false` to skip creating scroller.
 - `mouseWheelScroller` : Configuration of mouse-wheel-scroller behavior.
     - `mouseWheelScroller.focus` : 
-        - `true` : Only scrolling when cursor is over textArea.
-        - `false` : Scrolling without checking cursor. Default behavior.
+        - `true` : Only scrolling when cursor is over textArea. Default behavior.
+        - `false` : Scrolling without checking cursor.
     - `mouseWheelScroller.speed` : Scrolling speed, default value is `0.1`.
     - Set to `false` to skip creating mouse-wheel-scroller. Default behavior.
 - `clamplChildOY` : Set `true` to clamp scrolling.
@@ -270,12 +270,8 @@ var textArea = scene.rexUI.add.textArea({
     - `space.text` :
         - A number: Space between text object and slider object.
         - An object: Padding of text object.
-            - If `scrollMode` is `0` (vertical) :
-                - `space.text.top`, `space.text.bottom` : Top, bottom padding space of text object.
-                - `space.text.right` : Space between text object and slider object.
-            - If `scrollMode` is `1` (horizontal) :
-                - `space.text.left`, `space.text.right` : Left, right padding space of text object.
-                - `space.text.bottom` : Space between text object and slider object.
+            - `space.text.top`, `space.text.bottom` : Top, bottom padding space of text object.
+            - `space.text.right` : Space between text object and slider object.                
     - `space.slider` :
         - `0` : No space around slider.
         - `space.slider.left`, `space.slider.right`, `space.slider.top`, `space.slider.bottom` : Space around slider.
@@ -456,6 +452,19 @@ See also - [dirty](ui-basesizer.md#dirty)
     - Get enable state
         ```javascript
         var enable = textArea.scrollerEnable;
+        ```
+- Mouse-Wheel-Scroller
+    - Set enable state
+        ```javascript
+        textArea.setMouseWheelScrollerEnable(enabled);
+        ```
+        or
+        ```javascript
+        textArea.mouseWheelScrollerEnable = enabled;
+        ```
+    - Get enable state
+        ```javascript
+        var enable = textArea.mouseWheelScrollerEnable;
         ```
 
 ### Event

@@ -38,6 +38,7 @@ module.exports = {
     'live2dplugin': ['./plugins/live2d-plugin.js', true],
     'layermanagerplugin': './plugins/layermanager-plugin.js',
     // texture
+    'framemanagerplugin': './plugins/framemanager-plugin.js',
     'canvasframemanagerplugin': './plugins/canvasframemanager-plugin.js',
     'charactercacheplugin': './plugins/charactercache-plugin.js',
     // effect layer (shader)
@@ -54,6 +55,7 @@ module.exports = {
     'gridalignplugin': './plugins/gridalign-plugin.js',
     'randomplaceplugin': './plugins/randomplace-plugin.js',
     'gridcutimageplugin': './plugins/gridcutimage-plugin.js',
+    'cutjigsawimageplugin': './plugins/cutjigsawimage-plugin.js',
 
     // input
     'dragplugin': './plugins/drag-plugin.js',
@@ -209,7 +211,7 @@ module.exports = {
     'warppipelineplugin': './plugins/warppipeline-plugin.js',
     'horrifipipelineplugin': './plugins/horrifipipeline-plugin.js',
 
-    'postfxpipelinebehavior': './plugins/postfxpipelinebehavior.js',
+    'localmaskplugin': './plugins/localmask-plugin.js',
 
     // board
     'boardplugin': './plugins/board-plugin.js',
@@ -228,6 +230,7 @@ module.exports = {
     'uiplugin': './templates/ui/ui-plugin.js',
     'dialogquest': './templates/dialog-quest/DialogQuest.js',
     'spinnerplugin': './templates/spinner/spinner-plugin.js',
+    'gameobjectshellplugin': './templates/gameobjectshell/gameobjectshell-plugin.js',
 
     // Plain class
     // rex ui
@@ -294,6 +297,7 @@ module.exports = {
     'tagtext': './templates/ui/tagtext/TagText.js',
     'tap': './templates/ui/tap/Tap.js',
     'textarea': './templates/ui/textarea/TextArea.js',
+    'textareainput': './templates/ui/textareainput/TextAreaInput.js',
     'textbox': './templates/ui/textbox/TextBox.js',
     'toast': './templates/ui/toast/Toast.js',
     'tweaker': './templates/ui/tweaker/Tweaker.js',

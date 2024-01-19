@@ -87,10 +87,10 @@ var layer = scene.add.layer();
 Removed game object won't be added to display list of scene, use
 
 ```javascript
-scene.add.existing(gameObject);
+gameObject.addToDisplayList();
 ```
 
-to add it back.
+to add it back to scene's display list.
 
 ### Get child
 
@@ -222,6 +222,23 @@ layer.each(function(gameObject) {
 layer.setAll(property, value);
 // layer.setAll(property, value, startIndex, endIndex);
 ```
+
+### Events
+
+- On add game object
+    ```javascript
+    layer.events.on('addedtoscene', function(gameObject, scene) {
+
+    })
+    ```
+- On remove game object
+    ```javascript
+    layer.events.on('removedfromscene', function(gameObject, scene) {
+
+    })
+    ```
+
+`layer.events` references to `scene.events`.
 
 ### Other properties
 

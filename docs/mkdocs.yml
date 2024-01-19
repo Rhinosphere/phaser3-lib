@@ -149,7 +149,8 @@ nav:
             - Group actions: groupactions.md
             - Quad/Hexagon grid align: gridalign.md
             - Random place: randomplace.md
-            - Grid cut image: gridcutimage.md
+            - Grid cut image: gridcutimage.md            
+            - Cut Jigsaw Image: cutjigsawimage.md
         - Position:
             - Move to: moveto.md
             - Ease-move: easemove.md
@@ -196,11 +197,11 @@ nav:
                 - Attractor: matterjs-attractor.md
     - Textures:
         - Textures: textures.md
-        - Canvas texture:
-            - Canvas texture: canvas-texture.md
-            - Canvas frame manager: canvasframemanager.md
-            - Character cache: charactercache.md
-        - Dynamic texture: dynamic-texture.md        
+        - Canvas texture: canvas-texture.md            
+        - Dynamic texture: dynamic-texture.md
+        - Frame manager:
+            - Frame manager: framemanager.md
+            - Character cache: charactercache.md      
     - Display:
         - Mask: mask.md
         - Blend mode: blendmode.md
@@ -254,6 +255,7 @@ nav:
     - Built-in shader effects:
         - Effects : shader-builtin.md
         - Effect properties: effect-properties.md
+    - Pre fx pipeline: prefx-pipeline.md
     - Post fx pipeline: postfx-pipeline.md    
     - Color:
         - Glow: shader-glowfilter.md
@@ -412,6 +414,7 @@ nav:
         - Title label: ui-titlelabel.md
         - Name value label: ui-namevaluelabel.md
         - Badge label: ui-badgelabel.md
+        - Image input label: ui-imageinputlabel.md
     - Buttons:
         - Buttons: ui-buttons.md
         - Grid buttons: ui-gridbuttons.md
@@ -421,6 +424,7 @@ nav:
         - Scroll-able panel: ui-scrollablepanel.md
         - Grid table: ui-gridtable.md
         - Text area: ui-textarea.md
+        - Text area input: ui-textareainput.md
     - Slider:
         - Slider: ui-slider.md
         - Scroll bar: ui-scrollbar.md
@@ -501,10 +505,6 @@ site_url: https://rexrainbow.github.io/phaser3-rex-notes/docs/site/
 repo_name: 'phaser3-rex-notes'
 repo_url: 'https://github.com/rexrainbow/phaser3-rex-notes/'
 
-extra_javascript:
-- js/mermaid/mermaid.min.js
-- js/umlconvert.js
-
 extra:
     analytics:
         provider: google
@@ -556,9 +556,10 @@ markdown_extensions:
 - pymdownx.mark
 - pymdownx.smartsymbols
 - pymdownx.superfences:
-    custom_fences: [
-       {name: mermaid, class: mermaid}
-    ]
+    custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 - pymdownx.tasklist
 - pymdownx.tilde
 

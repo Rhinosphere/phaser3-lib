@@ -7,16 +7,13 @@ class Demo extends Phaser.Scene {
         })
     }
 
-    preload() {
-    }
+    preload() { }
 
     create() {
     }
 
-    update(time, delta) {
-    }
+    update() { }
 }
-
 
 var config = {
     type: Phaser.AUTO,

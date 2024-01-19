@@ -12,8 +12,6 @@ class TextArea extends Scrollable {
             config = {};
         }
 
-        config.scrollMode = 0;
-
         // Create text-block
         var textObject = GetValue(config, 'text', undefined);
         var textWidth = GetValue(config, 'textWidth', undefined);
@@ -66,11 +64,13 @@ class TextArea extends Scrollable {
     }
 
     get linesCount() {
-        return this.childrenMap.child.linesCount;
+        var textBlock = this.childrenMap.child;
+        return textBlock.linesCount;
     }
 
     get contentHeight() {
-        return this.childrenMap.child.textHeight;
+        var textBlock = this.childrenMap.child;
+        return textBlock.textHeight;
     }
 }
 

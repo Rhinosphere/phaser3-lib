@@ -58,19 +58,35 @@ class Demo extends Phaser.Scene {
         })
             .layout()
 
+        var container = this.add.container(300, 300);
+
+        console.log('At scene');
+        console.log("Scene's displayList size", this.children.length);
+        console.log("Container's displayList size", container.list.length);
+
         // Add containerLite(rexUI) to container
         // Solution A:
-        var container = this.add.container(300, 300, [dialog]);
+        // dialog.addToContainer(container);
 
         // Solution B:
-        /*
-        var container = this.add.container(300, 300);
-        dialog.addToContainer(container)
-        */
+        container.add(dialog);
+
+        console.log('Add to container');
+        console.log("Scene's displayList size", this.children.length);
+        console.log("Container's displayList size", container.list.length);
 
         // Remove containerLite(rexUI) from container
+        // Solution A:
+        // dialog.removeFromContainer();
+
+        // Solution B:
         container.remove(dialog);
+
         dialog.setPosition(400, 300);
+
+        console.log('Remove from container, add to scene');
+        console.log("Scene's displayList size", this.children.length);
+        console.log("Container's displayList size", container.list.length);
     }
 
     update() {

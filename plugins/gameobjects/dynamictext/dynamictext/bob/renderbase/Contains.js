@@ -8,21 +8,21 @@ var Contains = function (canvasX, canvasY) {
     }
 
     var bobPosition = CanvasPositionToBobPosition(canvasX, canvasY, this, true);
-    return GetBounds(this).contains(bobPosition.x, bobPosition.y);
+    return GetBobBounds(this).contains(bobPosition.x, bobPosition.y);
 }
 
-var GetBounds = function (bob) {
-    if (globBounds === undefined) {
-        globBounds = new Rectangle();
+var GetBobBounds = function (bob) {
+    if (bobBounds === undefined) {
+        bobBounds = new Rectangle();
     }
 
     var x = bob.drawTLX,
         y = bob.drawTLY;
-    globBounds.setTo(x, y, (bob.drawTRX - x), (bob.drawBLY - y));
+    bobBounds.setTo(x, y, (bob.drawTRX - x), (bob.drawBLY - y));
 
-    return globBounds;
+    return bobBounds;
 }
 
-var globBounds;
+var bobBounds;
 
 export default Contains;

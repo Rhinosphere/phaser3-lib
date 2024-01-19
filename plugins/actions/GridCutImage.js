@@ -1,4 +1,4 @@
-import GridCut from '../utils/texture/gridcut/GridCut.js';
+import GenerateFrames from '../utils/texture/gridcut/GenerateFrames.js';
 
 const GetValue = Phaser.Utils.Objects.GetValue;
 const DefaultImageClass = Phaser.GameObjects.Image;
@@ -12,7 +12,7 @@ var GridCutImage = function (gameObject, columns, rows, config) {
         rows = GetValue(config, 'rows', 1);
     }
 
-    var createImageCallback = GetValue(config, 'onCreateImage');
+    var createImageCallback = GetValue(config, 'createImageCallback');
     if (!createImageCallback) {
         var ImageClass = GetValue(config, 'ImageClass', DefaultImageClass);
         createImageCallback = function (scene, key, frame) {
@@ -22,15 +22,18 @@ var GridCutImage = function (gameObject, columns, rows, config) {
 
     var originX = GetValue(config, 'originX', 0.5);
     var originY = GetValue(config, 'originY', 0.5);
+
     var addToScene = GetValue(config, 'add', true);
+
     var align = GetValue(config, 'align', addToScene);
+
     var imageObjectPool = GetValue(config, 'objectPool', undefined);
 
     var scene = gameObject.scene;
     var texture = gameObject.texture;
     var frame = gameObject.frame;
 
-    var result = GridCut(scene, texture, frame, columns, rows);
+    var result = GenerateFrames(scene, texture, frame, columns, rows);
     var getFrameNameCallback = result.getFrameNameCallback;
     var scaleX = gameObject.scaleX,
         scaleY = gameObject.scaleY;
@@ -40,8 +43,8 @@ var GridCutImage = function (gameObject, columns, rows, config) {
         startY = topLeft.y;
 
     var cellGameObjects = [];
-    var cellWidth = result.cellWidth * scaleX,
-        cellHeight = result.cellHeight * scaleY;
+    var scaleCellWidth = result.cellWidth * scaleX,
+        scaleCellHeight = result.cellHeight * scaleY;
     for (var y = 0; y < rows; y++) {
         for (var x = 0; x < columns; x++) {
             var cellGameObject;
@@ -57,12 +60,12 @@ var GridCutImage = function (gameObject, columns, rows, config) {
                 scene.add.existing(cellGameObject);
             }
 
-            var cellTLX = startX + (cellWidth * x);
-            var cellTLY = startY + (cellHeight * y);
-            var cellX = cellTLX + (originX * cellWidth);
-            var cellY = cellTLY + (originY * cellHeight);
-
             if (align) {
+                var cellTLX = startX + (scaleCellWidth * x);
+                var cellTLY = startY + (scaleCellHeight * y);
+                var cellX = cellTLX + (originX * scaleCellWidth);
+                var cellY = cellTLY + (originY * scaleCellHeight);
+
                 cellGameObject
                     .setOrigin(originX, originY)
                     .setPosition(cellX, cellY)

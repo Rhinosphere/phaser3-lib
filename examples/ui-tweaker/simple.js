@@ -20,6 +20,8 @@ class Demo extends Phaser.Scene {
         var gameObject = this.add.circle(400, 300, 20, 0xff0000).setStrokeStyle(4, 0xffffff)
             .setName('abc');
 
+        gameObject.description = 'A Circle Game object';
+
         var panel = CreatePanel(this)
             .setPosition(0, 0)
             .setOrigin(0)
@@ -74,7 +76,8 @@ class Demo extends Phaser.Scene {
             .addTab({
                 pages: [
                     { title: 'Display' },
-                    { title: 'Color' }
+                    { title: 'Color' },
+                    { title: 'Description' }
                 ]
             })
 
@@ -132,6 +135,16 @@ class Demo extends Phaser.Scene {
                 }
             )
 
+        pages[2]
+            .addInput(
+                gameObject, 'description',
+                {
+                    icon: 'settings',           // Title icon
+                    view: 'textarea',
+                    orientation: 'y',
+                }
+            )
+
         panel
             .addSeparator()
             .addInput(
@@ -140,7 +153,10 @@ class Demo extends Phaser.Scene {
                     icon: 'settings',           // Title icon
                 }
             )
-            .layout();
+
+        panel
+            .layout()
+        //.drawBounds(this.add.graphics(), 0xff0000);
 
     }
 
@@ -186,14 +202,18 @@ var CreatePanel = function (scene) {
                     }
                 },
 
+                inputTextArea: {
+                    height: 100,
+                },
+
                 slider: {
                     track: {
                         color: COLOR_DARK,
-                        height: 8,
+                        width: 8, height: 8,
                     },
                     indicator: {
                         color: COLOR_PRIMARY,
-                        height: 8,
+                        width: 8, height: 8,
                     },
                     thumb: {
                         color: COLOR_LIGHT,

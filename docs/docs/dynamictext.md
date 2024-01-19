@@ -595,6 +595,34 @@ txt.setWrapConfig(config);
 
 - `config` : Default configuration [Horizontal](dynamictext.md#horizontal-wrap)/[Vertical](dynamictext.md#vertical-wrap) wrapping.
 
+### Scroll content
+
+Scroll content by setting `textOX`, `textOY` members
+
+- Set
+    ```javascript
+    txt.setTextOXY(x, y).updateTexture();    
+    // txt.setTextOX(x).updateTexture();
+    // txt.setTextOY(x).updateTexture(); 
+    ```
+    or
+    ```javascript
+    txt.addTextOXY(incX, incY).updateTexture(); 
+    // txt.addTextOX(incX).updateTexture(); 
+    // txt.addTextOY(incY).updateTexture(); 
+    ```
+    or
+    ```javascript
+    txt.textOX = x;
+    txt.textOY = y;
+    txt.updateTexture();
+    ```
+- Get
+    ```javascript
+    var ox = txt.textOX;
+    var oy = txt.textOY;
+    ```
+
 ### Child
 
 #### General properties

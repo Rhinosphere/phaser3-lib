@@ -3012,15 +3012,34 @@
     if (descending === undefined) {
       descending = false;
     }
-    var displayList = gameObjects[0].displayList;
-    if (displayList) displayList.depthSort();
+    var itemList;
+    var gameObject = gameObjects[0];
+    if (gameObject.displayList) {
+      // Inside a scene or a layer
+      itemList = gameObject.displayList; // displayList
+    } else if (gameObject.parentContainer) {
+      // Inside a container
+      itemList = gameObject.parentContainer.list; // array
+    } else {
+      itemList = gameObject.scene.sys.displayList; // displayList
+      // ??       
+    }
+
+    if (itemList.depthSort) {
+      // Is a displayList object
+      itemList.depthSort();
+      itemList = itemList.list;
+      // itemList is an array now
+    }
+
+    // itemList is an array
     if (descending) {
       gameObjects.sort(function (childA, childB) {
-        if (displayList) return displayList.getIndex(childB) - displayList.getIndex(childA);else return 0;
+        return itemList.indexOf(childB) - itemList.indexOf(childA);
       });
     } else {
       gameObjects.sort(function (childA, childB) {
-        if (displayList) return displayList.getIndex(childA) - displayList.getIndex(childB);else return 0;
+        return itemList.indexOf(childA) - itemList.indexOf(childB);
       });
     }
     return gameObjects;
@@ -3102,6 +3121,48 @@
           gameObject.addToLayer(layer);
         } else {
           layer.add(gameObject);
+        }
+        return this;
+      }
+    }, {
+      key: "removeFromLayer",
+      value: function removeFromLayer(name, gameObject, addToScene) {
+        var layer = this.getGO(name);
+        if (!layer) {
+          console.warn("Can't get layer \"".concat(name, "\""));
+          return;
+        }
+        if (addToScene === undefined) {
+          addToScene = true;
+        }
+        if (gameObject.isRexContainerLite) {
+          gameObject.removeFromLayer(layer, addToScene);
+        } else {
+          layer.remove(gameObject);
+          if (addToScene) {
+            gameObject.addToDisplayList();
+          }
+        }
+        return this;
+      }
+    }, {
+      key: "clearLayer",
+      value: function clearLayer(name, destroyChildren) {
+        if (destroyChildren === undefined) {
+          destroyChildren = true;
+        }
+        var layer = this.getGO(name);
+        if (!layer) {
+          console.warn("Can't get layer \"".concat(name, "\""));
+          return;
+        }
+        if (destroyChildren) {
+          var children = layer.getAll();
+          for (var i = 0, cnt = children.length; i < cnt; i++) {
+            children.destroy();
+          }
+        } else {
+          layer.removeAll();
         }
         return this;
       }

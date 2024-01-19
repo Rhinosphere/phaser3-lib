@@ -1,3 +1,4 @@
+import BaseSizer from '../basesizer/BaseSizer';
 import Sizer from '../sizer/Sizer';
 import RoundRectangle from '../roundrectangle/RoundRectangle';
 import CreateBackground from '../utils/build/CreateBackground';
@@ -6,6 +7,7 @@ import Buttons from '../buttons/Buttons';
 import FixWidthButtons from '../fixwidthbuttons/FixWidthButtons';
 import Pages from '../pages/Pages';
 import InputText from '../canvasinput/CanvasInput';
+import InputTextArea from '../textareainput/TextAreaInput';
 import Checkbox from '../checkbox/Checkbox';
 import ToggleSwitch from '../toggleswitch/ToggleSwitch';
 import ColorInput from '../colorinput/colorinput/ColorInput';
@@ -44,6 +46,44 @@ declare namespace Tweaker {
         }
     }
 
+    interface IInputRowStyle {
+        background?: CreateBackground.IConfig,
+
+        title?: SimpleLabel.IConfig,
+
+        inputText?: InputText.IConfig,
+
+        inputTextArea?: InputTextArea.IConfig,
+
+        slider?: {
+            track: RoundRectangle.IConfig,
+            indicator: RoundRectangle.IConfig,
+            thumb: RoundRectangle.IConfig,
+        },
+
+        list?: {
+            label?: SimpleLabel.IConfig,
+
+            button?: IInteractiveLabelConfig,
+        },
+
+        button?: IButtonConfig,
+
+        checkbox?: Checkbox.IConfig,
+
+        toggleSwitch?: ToggleSwitch.IConfig,
+
+        colorInput?: ColorInput.IConfig,
+
+        proportion?: {
+            title?: number,
+            inputField?: number,
+            range?: {
+                slider?: number,
+                inputText?: number,
+            }
+        }
+    }
 
     interface IConfig extends Sizer.IConfig {
         styles: {
@@ -51,42 +91,7 @@ declare namespace Tweaker {
 
             background?: CreateBackground.IConfig,
 
-            inputRow?: {
-                background?: CreateBackground.IConfig,
-
-                title?: SimpleLabel.IConfig,
-
-                inputText?: InputText.IConfig,
-
-                slider?: {
-                    track: RoundRectangle.IConfig,
-                    indicator: RoundRectangle.IConfig,
-                    thumb: RoundRectangle.IConfig,
-                },
-
-                list?: {
-                    label?: SimpleLabel.IConfig,
-
-                    button?: IInteractiveLabelConfig,
-                },
-
-                button?: IButtonConfig,
-
-                checkbox?: Checkbox.IConfig,
-
-                toggleSwitch?: ToggleSwitch.IConfig,
-
-                colorInput?: ColorInput.IConfig,
-
-                proportion?: {
-                    title?: number,
-                    inputField?: number,
-                    range?: {
-                        slider?: number,
-                        inputText?: number,
-                    }
-                }
-            },
+            inputRow?: IInputRowStyle,
 
             folder?: {
                 title?: SimpleLabel.IConfig,
@@ -121,7 +126,7 @@ declare namespace Tweaker {
         bindingKey?: string,
         autoUpdate?: boolean,
 
-        view?: 'string' | 'number' | 'range' | 'list' | 'buttons' | 'boolean' | 'color',
+        view?: string,
 
         icon?: string,
         iconFrame?: string,
@@ -129,8 +134,12 @@ declare namespace Tweaker {
 
         title?: string,
 
+        orientation?: Sizer.OrientationTypes,
+
+        // range
         min?: number, max?: number,
 
+        // list, buttons
         options?: {
             text: string,
             value: any
@@ -186,6 +195,38 @@ declare namespace Tweaker {
 
         key?: string,
     }
+
+    interface IAcceptConfig extends IAddInputConfig {
+        value: unknown
+    }
+
+    interface IInputHandlerConfig {
+        name?: string,
+
+        baseClass?: BaseSizer,
+
+        accept: (
+            config: IAcceptConfig,
+        ) => boolean,
+
+        build: (
+            gameObject: BaseSizer,
+            style: IInputRowStyle
+        ) => void,
+
+        setup?: (
+            gameObject: BaseSizer,
+            config: IAddInputConfig,
+            setDefaults: boolean,
+        ) => void,
+
+        displayValue?: (
+            gameObject: BaseSizer,
+            value: unknown
+        ) => void,
+
+    }
+
 }
 
 declare class Tweaker extends Sizer {
@@ -194,12 +235,19 @@ declare class Tweaker extends Sizer {
         config?: Tweaker.IConfig
     );
 
+    registerInputHandler(
+        config: Tweaker.IInputHandlerConfig
+    ): this;
+
+    removeInputHandler(
+        name: string
+    ): this;
+
     addInput(
         object: Object,
         key: string,
         config?: Tweaker.IAddInputConfig
     ): this;
-
 
     addInput(
         config?: Tweaker.IAddInputConfig

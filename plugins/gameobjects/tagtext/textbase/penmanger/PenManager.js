@@ -215,16 +215,20 @@ class PenManager {
     }
 
     getSliceTagText(start, end, wrap) {
-        if (start === undefined) {
-            start = 0;
+        var lastPen = this.lastPen;
+        if (lastPen == null) {
+            return '';
         }
-        if (end === undefined) {
-            var lastPen = this.lastPen;
-            if (lastPen == null) {
-                return "";
-            }
+        var lastPenEnd = lastPen.endIndex;
 
-            end = lastPen.endIndex;
+        if ((start === undefined) || (start === 0)) {
+            // Image pen before first character
+            start = -1;
+        }
+
+        if ((end === undefined) || (end === lastPenEnd)) {
+            // Image pen after last character
+            end = lastPenEnd + 1;
         }
         if (wrap === undefined) {
             wrap = false;
