@@ -912,18 +912,18 @@
       return false;
     }
     var bobPosition = CanvasPositionToBobPosition(canvasX, canvasY, this, true);
-    return GetBounds(this).contains(bobPosition.x, bobPosition.y);
+    return GetBobBounds(this).contains(bobPosition.x, bobPosition.y);
   };
-  var GetBounds = function GetBounds(bob) {
-    if (globBounds === undefined) {
-      globBounds = new Rectangle();
+  var GetBobBounds = function GetBobBounds(bob) {
+    if (bobBounds === undefined) {
+      bobBounds = new Rectangle();
     }
     var x = bob.drawTLX,
       y = bob.drawTLY;
-    globBounds.setTo(x, y, bob.drawTRX - x, bob.drawBLY - y);
-    return globBounds;
+    bobBounds.setTo(x, y, bob.drawTRX - x, bob.drawBLY - y);
+    return bobBounds;
   };
-  var globBounds;
+  var bobBounds;
 
   var RotateAround = Phaser.Math.RotateAround;
   var BobPositionToCanvasPosition = function BobPositionToCanvasPosition(bob, bobX, bobY, out) {
@@ -1008,6 +1008,8 @@
       _classCallCheck(this, RenderBase);
       _this = _super.call(this, parent, type);
       _this.renderable = true;
+      _this.scrollFactorX = 1;
+      _this.scrollFactorY = 1;
       _this.toLocalPosition = true;
       _this.originX = 0;
       _this.offsetX = 0; // Override
@@ -1089,6 +1091,28 @@
       value: function setInitialPosition(x, y) {
         this.x0 = x;
         this.y0 = y;
+        return this;
+      }
+    }, {
+      key: "setScrollFactorX",
+      value: function setScrollFactorX(x) {
+        this.scrollFactorX = x;
+        return this;
+      }
+    }, {
+      key: "setScrollFactorY",
+      value: function setScrollFactorY(y) {
+        this.scrollFactorY = y;
+        return this;
+      }
+    }, {
+      key: "setScrollFactor",
+      value: function setScrollFactor(x, y) {
+        if (y === undefined) {
+          y = x;
+        }
+        this.scrollFactorX = x;
+        this.scrollFactorY = y;
         return this;
       }
     }, {
@@ -1336,12 +1360,14 @@
     }, {
       key: "drawX",
       get: function get() {
-        return this.x + this.leftSpace + this.offsetX - this.originX * this.width;
+        var x = this.x + this.leftSpace + this.offsetX - this.originX * this.width;
+        return this.parent._textOX * this.scrollFactorX + x;
       }
     }, {
       key: "drawY",
       get: function get() {
-        return this.y + this.offsetY;
+        var y = this.y + this.offsetY;
+        return this.parent._textOY * this.scrollFactorY + y;
       }
 
       // Override
@@ -1799,6 +1825,7 @@
       var _this;
       _classCallCheck(this, Background);
       _this = _super.call(this, parent, 'background');
+      _this.setScrollFactor(0);
       _this.setColor(GetValue$6(config, 'color', null), GetValue$6(config, 'color2', null), GetValue$6(config, 'horizontalGradient', true));
       _this.setStroke(GetValue$6(config, 'stroke', null), GetValue$6(config, 'strokeThickness', 2));
       _this.setCornerRadius(GetValue$6(config, 'cornerRadius', 0), GetValue$6(config, 'cornerIteration', null));
@@ -1938,6 +1965,7 @@
       var _this;
       _classCallCheck(this, InnerBounds);
       _this = _super.call(this, parent, 'innerbounds');
+      _this.setScrollFactor(0);
       _this.setColor(GetValue$5(config, 'color', null), GetValue$5(config, 'color2', null), GetValue$5(config, 'horizontalGradient', true));
       _this.setStroke(GetValue$5(config, 'stroke', null), GetValue$5(config, 'strokeThickness', 2));
       return _this;
@@ -2439,13 +2467,13 @@
     if (height === undefined) {
       height = 0;
     }
-    var dirty = this.fixedWidth !== width || this.fixedHeight !== height;
-    if (!dirty) {
+    if (this.fixedWidth === width && this.fixedHeight === height) {
       return this;
     }
     this.fixedWidth = width;
     this.fixedHeight = height;
-    this.dirty = true;
+    this.dirty = true; // -> this.updateTexture();
+
     this.setCanvasSize(width > 0 ? width : this.width, height > 0 ? height : this.height);
     return this;
   };
@@ -3393,6 +3421,35 @@
     return this;
   };
 
+  var CreateWrapResultData = function CreateWrapResultData(config) {
+    var data = {
+      callback: undefined,
+      start: 0,
+      // Next start index
+      isLastPage: false,
+      // Is last page
+      maxLines: undefined,
+      padding: undefined,
+      letterSpacing: undefined,
+      hAlign: undefined,
+      vAlign: undefined,
+      children: [],
+      // Wrap result
+      lines: [],
+      // Wrap result in lines
+
+      // WordWrap
+      maxLineWidth: 0,
+      linesHeight: 0,
+      lineHeight: undefined,
+      // VerticalWrap
+      maxLineHeight: 0,
+      linesWidth: 0,
+      lineWidth: undefined
+    };
+    return Object.assign(data, config);
+  };
+
   var GetWord = function GetWord(children, startIndex, charMode, result) {
     if (result === undefined) {
       result = {
@@ -3589,28 +3646,22 @@
     var hAlign = GetValue$3(config, 'hAlign', 0);
     var vAlign = GetValue$3(config, 'vAlign', 0);
     var charWrap = GetValue$3(config, 'charWrap', false);
-    var result = {
+    var result = CreateWrapResultData({
+      // Override properties
       callback: 'runWordWrap',
       start: startIndex,
       // Next start index
-      isLastPage: false,
-      // Is last page
       padding: this.wrapPadding,
-      ascent: ascent,
-      lineHeight: lineHeight,
-      maxLines: maxLines,
-      wrapWidth: wrapWidth,
       letterSpacing: letterSpacing,
+      maxLines: maxLines,
       hAlign: hAlign,
       vAlign: vAlign,
-      charWrap: charWrap,
-      children: [],
-      // Word-wrap result
-      lines: [],
-      // Word-wrap result in lines
-      maxLineWidth: 0,
-      linesHeight: 0
-    };
+      // Specific properties
+      ascent: ascent,
+      lineHeight: lineHeight,
+      wrapWidth: wrapWidth,
+      charWrap: charWrap
+    });
 
     // Set all children to inactive
     var children = this.children;
@@ -3815,13 +3866,13 @@
 
     var showAllLines = maxLines === 0;
 
-    // Get fixedChildHeight
-    var fixedChildHeight = GetValue$2(config, 'fixedChildHeight', undefined);
-    if (fixedChildHeight === undefined) {
+    // Get fixedCharacterHeight
+    var fixedCharacterHeight = GetValue$2(config, 'fixedCharacterHeight', undefined);
+    if (fixedCharacterHeight === undefined) {
       var charPerLine = GetValue$2(config, 'charPerLine', undefined);
       if (charPerLine !== undefined) {
         var innerHeight = this.fixedHeight - paddingVertical;
-        fixedChildHeight = Math.floor(innerHeight / charPerLine);
+        fixedCharacterHeight = Math.floor(innerHeight / charPerLine);
       }
     }
 
@@ -3839,28 +3890,22 @@
     var rtl = GetValue$2(config, 'rtl', true);
     var hAlign = GetValue$2(config, 'hAlign', rtl ? 2 : 0);
     var vAlign = GetValue$2(config, 'vAlign', 0);
-    var result = {
+    var result = CreateWrapResultData({
+      // Override properties
       callback: 'runVerticalWrap',
       start: startIndex,
       // Next start index
-      isLastPage: false,
-      // Is last page
       padding: this.wrapPadding,
-      lineWidth: lineWidth,
-      maxLines: maxLines,
-      fixedChildHeight: fixedChildHeight,
-      wrapHeight: wrapHeight,
       letterSpacing: letterSpacing,
+      maxLines: maxLines,
       hAlign: hAlign,
       vAlign: vAlign,
-      rtl: rtl,
-      children: [],
-      // Word-wrap result
-      lines: [],
-      // Word-wrap result in lines
-      maxLineHeight: 0,
-      linesWidth: 0
-    };
+      // Specific properties
+      lineWidth: lineWidth,
+      fixedCharacterHeight: fixedCharacterHeight,
+      wrapHeight: wrapHeight,
+      rtl: rtl
+    });
 
     // Set all children to active
     var children = this.children;
@@ -3893,7 +3938,7 @@
         lastLine.push(child);
         continue;
       }
-      var childHeight = (fixedChildHeight !== undefined ? fixedChildHeight : child.height) + letterSpacing;
+      var childHeight = (fixedCharacterHeight !== undefined ? fixedCharacterHeight : child.height) + letterSpacing;
       // Next line
       var isNewLineChar = IsNewLineChar(child);
       var isPageBreakChar = IsPageBreakChar(child);
@@ -3995,6 +4040,43 @@
     },
     setHAlign: function setHAlign(align) {
       this.wrapConfig.hAlign = align;
+      return this;
+    }
+  };
+
+  var SetTextOXYMethods = {
+    setTextOX: function setTextOX(ox) {
+      if (ox === this._textOX) {
+        return this;
+      }
+      this._textOX = ox;
+      return this;
+    },
+    setTextOY: function setTextOY(oy) {
+      if (oy === this._textOY) {
+        return this;
+      }
+      this._textOY = oy;
+      return this;
+    },
+    setTextOXY: function setTextOXY(ox, oy) {
+      if (ox === this._textOX && oy === this._textOY) {
+        return;
+      }
+      this._textOX = ox;
+      this._textOY = oy;
+      return this;
+    },
+    addTextOX: function addTextOX(incX) {
+      this.setTextOX(this._textOX + incX);
+      return this;
+    },
+    addTextOY: function addTextOY(incY) {
+      this.setTextOY(this._textOY + incY);
+      return this;
+    },
+    addTextOXY: function addTextOXY(incX, incY) {
+      this.setTextOXY(this._textOX + incX, this._textOY + incY);
       return this;
     }
   };
@@ -4443,7 +4525,7 @@
     setChildrenInteractiveEnable: SetChildrenInteractiveEnable,
     setInteractive: SetInteractive
   };
-  Object.assign(Methods, MoveChildMethods, BackgroundMethods, InnerBoundsMethods, SetAlignMethods);
+  Object.assign(Methods, MoveChildMethods, BackgroundMethods, InnerBoundsMethods, SetAlignMethods, SetTextOXYMethods);
 
   var Stack = /*#__PURE__*/function () {
     function Stack() {
@@ -4558,6 +4640,8 @@
       _this.defaultTextStyle = new TextStyle(null, textStyleConfig);
       _this.textStyle = _this.defaultTextStyle.clone();
       _this.setTestString(GetValue(config, 'testString', '|MÉqgy'));
+      _this._textOX = 0;
+      _this._textOY = 0;
       _this.background = new Background(_assertThisInitialized(_this), GetValue(config, 'background', undefined));
       _this.innerBounds = new InnerBounds(_assertThisInitialized(_this), GetValue(config, 'innerBounds', undefined));
       _this.children = [];
@@ -4594,6 +4678,22 @@
       value: function setSize(width, height) {
         this.setFixedSize(width, height);
         return this;
+      }
+    }, {
+      key: "textOX",
+      get: function get() {
+        return this._textOX;
+      },
+      set: function set(value) {
+        this.setTextOX(value);
+      }
+    }, {
+      key: "textOY",
+      get: function get() {
+        return this._textOY;
+      },
+      set: function set(value) {
+        this.setTextOY(value);
       }
     }]);
     return DynamicText;

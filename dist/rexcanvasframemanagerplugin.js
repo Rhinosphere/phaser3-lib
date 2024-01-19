@@ -118,6 +118,54 @@
     return typeof key === "symbol" ? key : String(key);
   }
 
+  var GameClass = Phaser.Game;
+  var IsGame = function IsGame(object) {
+    return object instanceof GameClass;
+  };
+
+  var SceneClass = Phaser.Scene;
+  var IsSceneObject = function IsSceneObject(object) {
+    return object instanceof SceneClass;
+  };
+
+  var GetGame = function GetGame(object) {
+    if (object == null || _typeof(object) !== 'object') {
+      return null;
+    } else if (IsGame(object)) {
+      return object;
+    } else if (IsGame(object.game)) {
+      return object.game;
+    } else if (IsSceneObject(object)) {
+      // object = scene object
+      return object.sys.game;
+    } else if (IsSceneObject(object.scene)) {
+      // object = game object
+      return object.scene.sys.game;
+    }
+  };
+
+  var GetWhiteFrame = function GetWhiteFrame(game) {
+    return GetGame(game).textures.getFrame('__WHITE');
+  };
+
+  var DynamicTextureClearRectangle = function DynamicTextureClearRectangle(texture, x, y, width, height) {
+    if (WhiteFrameWidth === undefined) {
+      var whiteFrame = GetWhiteFrame(texture.manager.game);
+      WhiteFrameWidth = whiteFrame.cutWidth;
+      WhiteFrameHeight = whiteFrame.cutHeight;
+    }
+    texture.stamp('__WHITE', undefined, x, y, {
+      scaleX: width / WhiteFrameWidth,
+      scaleY: height / WhiteFrameHeight,
+      originX: 0,
+      originY: 0,
+      erase: true
+    });
+    return texture;
+  };
+  var WhiteFrameWidth;
+  var WhiteFrameHeight;
+
   var Draw = function Draw(frameName, callback, scope) {
     var index = this.getFrameIndex(frameName);
     if (index === -1) {
@@ -127,15 +175,38 @@
       console.warn('Does not have free space.');
       return this;
     }
-    var tl = this.getTopLeftPosition(index);
+    var tl = this.getTopLeftPosition(index),
+      outerX = tl.x,
+      outerY = tl.y,
+      cellPadding = this.cellPadding,
+      innerX = outerX + cellPadding,
+      innerY = outerY + cellPadding;
+    ClearFrame.call(this, outerX, outerY, this.outerCellWidth, this.outerCellHeight);
     var frameSize = {
       width: this.cellWidth,
       height: this.cellHeight
     };
+    var drawCallback = this.useDynamicTexture ? DrawDynamicTexture : DrawCanvasTexture;
+    drawCallback.call(this, innerX, innerY, frameSize, callback, scope);
+    // frameSize might be changed
+
+    this.texture.add(frameName, 0, innerX, innerY, frameSize.width, frameSize.height);
+    this.addFrameName(index, frameName);
+    return this;
+  };
+  var ClearFrame = function ClearFrame(x, y, width, height) {
+    if (this.useDynamicTexture) {
+      DynamicTextureClearRectangle(this.texture, x, y, width, height);
+    } else {
+      this.context.clearRect(x, y, width, height);
+    }
+  };
+  var DrawCanvasTexture = function DrawCanvasTexture(x, y, frameSize, callback, scope) {
     var context = this.context;
     context.save();
-    context.translate(tl.x, tl.y);
-    context.clearRect(0, 0, frameSize.width, frameSize.height);
+    context.translate(x, y);
+
+    // Draw cell
     if (scope) {
       callback.call(scope, this.canvas, context, frameSize);
     } else {
@@ -144,34 +215,84 @@
     // frameSize might be changed
 
     context.restore();
-    this.texture.add(frameName, 0, tl.x, tl.y, frameSize.width, frameSize.height);
-    this.addFrameName(index, frameName);
-    return this;
+  };
+  var DrawDynamicTexture = function DrawDynamicTexture(x, y, frameSize, callback, scope) {
+    var texture = this.texture;
+
+    // Draw cell
+    texture.camera.setScroll(-x, -y);
+    if (scope) {
+      callback.call(scope, texture, frameSize);
+    } else {
+      callback(texture, frameSize);
+    }
+    texture.camera.setScroll(0, 0);
+    // frameSize might be changed
+  };
+
+  var GetDisplayWidth = function GetDisplayWidth(gameObject) {
+    if (gameObject.displayWidth !== undefined) {
+      return gameObject.displayWidth;
+    } else {
+      return gameObject.width;
+    }
+  };
+  var GetDisplayHeight = function GetDisplayHeight(gameObject) {
+    if (gameObject.displayHeight !== undefined) {
+      return gameObject.displayHeight;
+    } else {
+      return gameObject.height;
+    }
   };
 
   var Paste = function Paste(frameName, gameObject) {
-    var srcCanvas = gameObject.canvas;
-    if (!srcCanvas) {
-      console.warn("Can't get canvas of game object.");
-      return this;
-    }
-    var srcWidth = srcCanvas.width,
-      srcHeight = srcCanvas.height;
-    var dWidth, dHeight;
-    if (srcWidth <= this.cellWidth && srcHeight <= this.cellHeight) {
-      dWidth = srcWidth;
-      dHeight = srcHeight;
+    var drawCallback;
+    if (this.useDynamicTexture) {
+      var srcWidth = GetDisplayWidth(gameObject),
+        srcHeight = GetDisplayHeight(gameObject);
+      var scale;
+      if (srcWidth <= this.cellWidth && srcHeight <= this.cellHeight) {
+        scale = 1;
+      } else {
+        // Scale down and keep ratio
+        scale = Math.max(srcWidth / this.cellWidth, srcHeight / this.cellHeight);
+      }
+      drawCallback = function drawCallback(texture, frameSize) {
+        var originXSave = gameObject.originX,
+          originYSave = gameObject.originY;
+        var scaleXSave = gameObject.scaleX,
+          scaleYSave = gameObject.scaleY;
+        gameObject.setOrigin(0, 0).setScale(scale, scale);
+        texture.draw(gameObject);
+        gameObject.setOrigin(originXSave, originYSave).setScale(scaleXSave, scaleYSave);
+        frameSize.width = srcWidth / scale;
+        frameSize.height = srcHeight / scale;
+      };
     } else {
-      // Scale down and keep ratio
-      var scale = Math.max(srcWidth / this.cellWidth, srcHeight / this.cellHeight);
-      dWidth = srcWidth / scale;
-      dHeight = srcHeight / scale;
+      var srcCanvas = gameObject.canvas;
+      if (!srcCanvas) {
+        console.warn("Can't get canvas of game object.");
+        return this;
+      }
+      var srcWidth = srcCanvas.width,
+        srcHeight = srcCanvas.height;
+      var dWidth, dHeight;
+      if (srcWidth <= this.cellWidth && srcHeight <= this.cellHeight) {
+        dWidth = srcWidth;
+        dHeight = srcHeight;
+      } else {
+        // Scale down and keep ratio
+        var scale = Math.max(srcWidth / this.cellWidth, srcHeight / this.cellHeight);
+        dWidth = srcWidth / scale;
+        dHeight = srcHeight / scale;
+      }
+      drawCallback = function drawCallback(canvas, context, frameSize) {
+        context.drawImage(srcCanvas, 0, 0, dWidth, dHeight);
+        frameSize.width = dWidth;
+        frameSize.height = dHeight;
+      };
     }
-    this.draw(frameName, function (canvas, context, frameSize) {
-      context.drawImage(srcCanvas, 0, 0, dWidth, dHeight);
-      frameSize.width = dWidth;
-      frameSize.height = dHeight;
-    });
+    this.draw(frameName, drawCallback);
     return this;
   };
 
@@ -182,11 +303,47 @@
     if (height === undefined) {
       height = this.cellHeight;
     }
-    this.draw(frameName, function (canvas, context, frameSize) {
-      frameSize.width = width;
-      frameSize.height = height;
-    });
+    var drawCallback;
+    if (this.useDynamicTexture) {
+      drawCallback = function drawCallback(texture, frameSize) {
+        frameSize.width = width;
+        frameSize.height = height;
+      };
+    } else {
+      drawCallback = function drawCallback(canvas, context, frameSize) {
+        frameSize.width = width;
+        frameSize.height = height;
+      };
+    }
+    this.draw(frameName, drawCallback);
     return this;
+  };
+
+  var RemoveMethods = {
+    // Remove a frame
+    remove: function remove(frameName) {
+      var index = this.getFrameIndex(frameName);
+      if (index === -1) {
+        return this;
+      }
+      this.addFrameName(index, undefined);
+      this.texture.remove(frameName);
+
+      // Don't clear canvas
+
+      return this;
+    },
+    // Remove all frames
+    clear: function clear() {
+      for (var i, cnt = this.frameNames.length; i < cnt; i++) {
+        var frameName = this.frameNames[i];
+        if (frameName !== undefined) {
+          this.addFrameName(index, undefined);
+          this.texture.remove(frameName);
+        }
+      }
+      return this;
+    }
   };
 
   var AddToBitmapFont = function AddToBitmapFont() {
@@ -246,38 +403,26 @@
     addEmptyFrame: AddEmptyFrame,
     addToBitmapFont: AddToBitmapFont
   };
+  Object.assign(methods, RemoveMethods);
 
-  var GameClass = Phaser.Game;
-  var IsGame = function IsGame(object) {
-    return object instanceof GameClass;
-  };
-
-  var SceneClass = Phaser.Scene;
-  var IsSceneObject = function IsSceneObject(object) {
-    return object instanceof SceneClass;
-  };
-
-  var GetGame = function GetGame(object) {
-    if (object == null || _typeof(object) !== 'object') {
-      return null;
-    } else if (IsGame(object)) {
-      return object;
-    } else if (IsGame(object.game)) {
-      return object.game;
-    } else if (IsSceneObject(object)) {
-      // object = scene object
-      return object.sys.game;
-    } else if (IsSceneObject(object.scene)) {
-      // object = game object
-      return object.scene.sys.game;
+  var CreateTexture = function CreateTexture(game, key, width, height, useDynamicTexture) {
+    game = GetGame(game);
+    if (useDynamicTexture === undefined) {
+      useDynamicTexture = false;
     }
+    var textureManager = game.textures;
+    if (textureManager.exists(key)) {
+      textureManager.remove(key);
+    }
+    return textureManager[useDynamicTexture ? 'addDynamicTexture' : 'createCanvas'](key, width, height);
   };
 
   var IsPlainObject = Phaser.Utils.Objects.IsPlainObject;
   var GetValue = Phaser.Utils.Objects.GetValue;
-  var CanvasFrameManager = /*#__PURE__*/function () {
-    function CanvasFrameManager(scene, key, width, height, cellWidth, cellHeight, fillColor) {
-      _classCallCheck(this, CanvasFrameManager);
+  var FrameManager = /*#__PURE__*/function () {
+    function FrameManager(scene, key, width, height, cellWidth, cellHeight, fillColor, useDynamicTexture) {
+      _classCallCheck(this, FrameManager);
+      var columns, rows, cellPadding;
       if (IsPlainObject(key)) {
         var config = key;
         key = GetValue(config, 'key');
@@ -285,13 +430,16 @@
         height = GetValue(config, 'height');
         cellWidth = GetValue(config, 'cellWidth');
         cellHeight = GetValue(config, 'cellHeight');
+        cellPadding = GetValue(config, 'cellPadding', 0);
+        columns = GetValue(config, 'columns');
+        rows = GetValue(config, 'rows');
         fillColor = GetValue(config, 'fillColor');
-      }
-      if (width === undefined) {
-        width = 4096;
-      }
-      if (height === undefined) {
-        height = 4096;
+        useDynamicTexture = GetValue(config, 'useDynamicTexture');
+      } else {
+        if (typeof fillColor === 'boolean') {
+          useDynamicTexture = fillColor;
+          fillColor = undefined;
+        }
       }
       if (cellWidth === undefined) {
         cellWidth = 64;
@@ -299,30 +447,68 @@
       if (cellHeight === undefined) {
         cellHeight = 64;
       }
+      if (cellPadding === undefined) {
+        cellPadding = 0;
+      }
+      this.cellWidth = cellWidth;
+      this.cellHeight = cellHeight;
+      this.cellPadding = cellPadding;
+      if (columns) {
+        width = this.outerCellWidth * columns;
+      } else {
+        if (width === undefined) {
+          width = 4096;
+        }
+        columns = Math.floor(width / this.outerCellWidth);
+      }
+      if (rows) {
+        height = this.outerCellWidth * rows;
+      } else {
+        if (height === undefined) {
+          height = 4096;
+        }
+        rows = Math.floor(height / this.outerCellWidth);
+      }
+      if (useDynamicTexture === undefined) {
+        useDynamicTexture = false;
+      }
       var game = GetGame(scene);
-      this.texture = game.textures.createCanvas(key, width, height);
-      this.canvas = this.texture.getCanvas();
-      this.context = this.texture.getContext();
+      this.useDynamicTexture = useDynamicTexture;
+      this.texture = CreateTexture(game, key, width, height, useDynamicTexture);
+      this.canvas = useDynamicTexture ? undefined : this.texture.getCanvas();
+      this.context = useDynamicTexture ? undefined : this.texture.getContext();
       this.bitmapFontCache = game.cache.bitmapFont;
       if (fillColor !== undefined) {
-        var context = this.context;
-        context.fillStyle = fillColor;
-        context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        if (useDynamicTexture) {
+          this.texture.fill(fillColor);
+        } else {
+          var context = this.context;
+          context.fillStyle = fillColor;
+          context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
       }
       this.key = key;
       this.width = width;
       this.height = height;
-      this.cellWidth = cellWidth;
-      this.cellHeight = cellHeight;
-      this.columnCount = Math.floor(width / cellWidth);
-      this.rowCount = Math.floor(height / cellHeight);
-      this.totalCount = this.columnCount * this.rowCount;
+      this.columns = columns;
+      this.rows = rows;
+      this.totalCount = this.columns * this.rows;
       this.frameNames = Array(this.totalCount);
       for (var i = 0, cnt = this.frameNames.length; i < cnt; i++) {
         this.frameNames[i] = undefined;
       }
     }
-    _createClass(CanvasFrameManager, [{
+    _createClass(FrameManager, [{
+      key: "outerCellWidth",
+      get: function get() {
+        return this.cellWidth + this.cellPadding * 2;
+      }
+    }, {
+      key: "outerCellHeight",
+      get: function get() {
+        return this.cellHeight + this.cellPadding * 2;
+      }
+    }, {
       key: "destroy",
       value: function destroy() {
         this.texture = undefined;
@@ -337,8 +523,8 @@
         return this.frameNames.indexOf(frameName);
       }
     }, {
-      key: "hasFrameName",
-      value: function hasFrameName(frameName) {
+      key: "contains",
+      value: function contains(frameName) {
         return this.getFrameIndex(frameName) !== -1;
       }
     }, {
@@ -358,57 +544,33 @@
         if (out === undefined) {
           out = {};
         }
-        var columnIndex = frameIndex % this.columnCount;
-        var rowIndex = Math.floor(frameIndex / this.rowCount);
-        out.x = columnIndex * this.cellWidth;
-        out.y = rowIndex * this.cellHeight;
+        var columnIndex = frameIndex % this.columns;
+        var rowIndex = Math.floor(frameIndex / this.columns);
+        out.x = columnIndex * (this.cellWidth + this.cellPadding * 2);
+        out.y = rowIndex * (this.cellHeight + this.cellPadding * 2);
         return out;
       }
     }, {
       key: "updateTexture",
       value: function updateTexture() {
-        this.texture.refresh();
-        return this;
-      }
-    }, {
-      key: "remove",
-      value: function remove(frameName) {
-        var index = this.getFrameIndex(frameName);
-        if (index === -1) {
-          return this;
-        }
-        this.addFrameName(index, undefined);
-        this.texture.remove(frameName);
-
-        // Don't clear canvas
-
-        return this;
-      }
-    }, {
-      key: "clear",
-      value: function clear() {
-        for (var i, cnt = this.frameNames.length; i < cnt; i++) {
-          var frameName = this.frameNames[i];
-          if (frameName !== undefined) {
-            this.addFrameName(index, undefined);
-            this.texture.remove(frameName);
-          }
+        if (this.useDynamicTexture) ; else {
+          this.texture.refresh();
         }
         return this;
       }
     }]);
-    return CanvasFrameManager;
+    return FrameManager;
   }();
-  Object.assign(CanvasFrameManager.prototype, methods);
+  Object.assign(FrameManager.prototype, methods);
 
-  var CanvasFrameManagerPlugin = /*#__PURE__*/function (_Phaser$Plugins$BaseP) {
-    _inherits(CanvasFrameManagerPlugin, _Phaser$Plugins$BaseP);
-    var _super = _createSuper(CanvasFrameManagerPlugin);
-    function CanvasFrameManagerPlugin(pluginManager) {
-      _classCallCheck(this, CanvasFrameManagerPlugin);
+  var FrameManagerPlugin = /*#__PURE__*/function (_Phaser$Plugins$BaseP) {
+    _inherits(FrameManagerPlugin, _Phaser$Plugins$BaseP);
+    var _super = _createSuper(FrameManagerPlugin);
+    function FrameManagerPlugin(pluginManager) {
+      _classCallCheck(this, FrameManagerPlugin);
       return _super.call(this, pluginManager);
     }
-    _createClass(CanvasFrameManagerPlugin, [{
+    _createClass(FrameManagerPlugin, [{
       key: "start",
       value: function start() {
         var eventEmitter = this.game.events;
@@ -416,13 +578,13 @@
       }
     }, {
       key: "add",
-      value: function add(scene, key, width, height, cellWidth, cellHeight, fillColor) {
-        return new CanvasFrameManager(scene, key, width, height, cellWidth, cellHeight, fillColor);
+      value: function add(scene, key, width, height, cellWidth, cellHeight, fillColor, useDynamicTexture) {
+        return new FrameManager(scene, key, width, height, cellWidth, cellHeight, fillColor, useDynamicTexture);
       }
     }]);
-    return CanvasFrameManagerPlugin;
+    return FrameManagerPlugin;
   }(Phaser.Plugins.BasePlugin);
 
-  return CanvasFrameManagerPlugin;
+  return FrameManagerPlugin;
 
 }));

@@ -18,9 +18,7 @@ var MaskChildren = function (parent, mask, children) {
     var child, childBounds, visiblePointsNumber;
     for (var i = 0, cnt = children.length; i < cnt; i++) {
         child = children[i];
-        if (child.hasOwnProperty('isRexContainerLite')) {
-            continue;
-        }
+
         if (child === maskGameObject) {
             continue;
         }
@@ -77,11 +75,12 @@ var IsVisible = function (gameObject) {
 }
 
 var ContainsPoints = function (rectA, rectB) {
-    var result = 0;
     var top = rectB.top,
         bottom = rectB.bottom,
         left = rectB.left,
         right = rectB.right;
+
+    var result = 0;
     result += rectA.contains(left, top) ? 1 : 0;
     result += rectA.contains(left, bottom) ? 1 : 0;
     result += rectA.contains(right, top) ? 1 : 0;
@@ -90,24 +89,55 @@ var ContainsPoints = function (rectA, rectB) {
 };
 
 var ShowAll = function (parent, child, mask) {
-    parent.setChildMaskVisible(child, true);
-    if (child.clearMask) {
-        child.clearMask();
+    if (!child.hasOwnProperty('isRexContainerLite')) {
+        if (child.clearMask) {
+            child.clearMask();
+        }
+
+        parent.setChildMaskVisible(child, true);
+
+    } else {
+        child.syncChildrenEnable = false;
+        parent.setChildMaskVisible(child, true);
+        child.syncChildrenEnable = true;
+
     }
+
 }
 
 var ShowSome = function (parent, child, mask) {
-    parent.setChildMaskVisible(child, true);
-    if (child.setMask) {
-        child.setMask(mask);
+    if (!child.hasOwnProperty('isRexContainerLite')) {
+        if (child.setMask) {
+            child.setMask(mask);
+        }
+
+        parent.setChildMaskVisible(child, true);
+
+    } else {
+        child.syncChildrenEnable = false;
+        parent.setChildMaskVisible(child, true);
+        child.syncChildrenEnable = true;
+
     }
+
 }
 
 var ShowNone = function (parent, child, mask) {
-    parent.setChildMaskVisible(child, false);
-    if (child.clearMask) {
-        child.clearMask();
+    if (!child.hasOwnProperty('isRexContainerLite')) {
+        if (child.clearMask) {
+            child.clearMask();
+        }
+
+        parent.setChildMaskVisible(child, false);
+
+    } else {
+        child.syncChildrenEnable = false;
+        parent.setChildMaskVisible(child, false);
+        child.syncChildrenEnable = true;
+
     }
+
+
 }
 
 export default MaskChildren;

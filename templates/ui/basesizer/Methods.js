@@ -7,6 +7,7 @@ import RemoveChildMethods from './RemoveChildMethods.js';
 import AddChildrenMap from './AddChildrenMap.js';
 import RemoveChildrenMap from './RemoveChildrenMap.js';
 import GetElement from './GetElement.js';
+import GetChildIndex from './GetChildIndex.js';
 import PaddingMethods from './PaddingMethods.js';
 import ResolveWidth from './ResolveWidth.js';
 import ResolveChildrenWidth from './ResolveChildrenWidth.js';
@@ -25,6 +26,7 @@ import PreLayout from './PreLayout.js';
 import Layout from './Layout.js';
 import RunLayout from './RunLayout.js';
 import LayoutChildren from './LayoutChildren.js';
+import _PostLayout from './_PostLayout.js';
 import PostLayout from './PostLayout.js';
 import RunWidthWrap from './RunWidthWrap.js';
 
@@ -45,64 +47,68 @@ import ClickMethods from './ClickMethods.js';
 import ClickOutsideMethods from './ClickOutsideMethods.js';
 import TouchingMethods from './TouchingMethods.js';
 import SetChildrenInteractive from './SetChildrenInteractive.js';
+import InteractionCooldown from './InteractionCooldown.js';
 import BroadcastEvent from './BroadcastEvent.js';
 
 var methods = {
-    getSizerConfig: GetSizerConfig,
-    getChildPrevState: GetChildPrevState,
-    pushIntoBounds: PushIntoBounds,
-    drawBounds: DrawBounds,
-    resolveWidth: ResolveWidth,
-    resolveChildrenWidth: ResolveChildrenWidth,
-    resolveHeight: ResolveHeight,
-    postResolveSize: PostResolveSize,
-    getChildWidth: GetChildWidth,
-    getChildHeight: GetChildHeight,
-    getExpandedChildWidth: GetExpandedChildWidth,
-    getExpandedChildHeight: GetExpandedChildHeight,
+  getSizerConfig: GetSizerConfig,
+  getChildPrevState: GetChildPrevState,
+  pushIntoBounds: PushIntoBounds,
+  drawBounds: DrawBounds,
+  resolveWidth: ResolveWidth,
+  resolveChildrenWidth: ResolveChildrenWidth,
+  resolveHeight: ResolveHeight,
+  postResolveSize: PostResolveSize,
+  getChildWidth: GetChildWidth,
+  getChildHeight: GetChildHeight,
+  getExpandedChildWidth: GetExpandedChildWidth,
+  getExpandedChildHeight: GetExpandedChildHeight,
 
-    getChildrenWidth: GetChildrenWidth,
-    getChildrenHeight: GetChildrenHeight,
-    addChildrenMap: AddChildrenMap,
-    addElement: AddChildrenMap,
-    removeChildrenMap: RemoveChildrenMap,
-    getElement: GetElement,
-    getAllChildrenSizers: GetAllChildrenSizers,
-    getChildrenSizers: GetChildrenSizers,
-    preLayout: PreLayout,
-    layout: Layout,
-    runLayout: RunLayout,
-    layoutChildren: LayoutChildren,
-    runWidthWrap: RunWidthWrap,
-    layoutBackgrounds: LayoutBackgrounds,
-    postLayout: PostLayout,
+  getChildrenWidth: GetChildrenWidth,
+  getChildrenHeight: GetChildrenHeight,
+  addChildrenMap: AddChildrenMap,
+  addElement: AddChildrenMap,
+  removeChildrenMap: RemoveChildrenMap,
+  getElement: GetElement,
+  getChildIndex: GetChildIndex,
+  getAllChildrenSizers: GetAllChildrenSizers,
+  getChildrenSizers: GetChildrenSizers,
+  preLayout: PreLayout,
+  layout: Layout,
+  runLayout: RunLayout,
+  layoutChildren: LayoutChildren,
+  runWidthWrap: RunWidthWrap,
+  layoutBackgrounds: LayoutBackgrounds,
+  postLayout: PostLayout,
+  _postLayout: _PostLayout,
 
-    setAnchor: SetAnchor,
-    isInTouching: IsInTouching,
-    pointToChild: PointToChild,
-    setDraggable: SetDraggable,
-    setChildrenInteractive: SetChildrenInteractive,
-    broadcastEvent: BroadcastEvent,
+  setAnchor: SetAnchor,
+  isInTouching: IsInTouching,
+  pointToChild: PointToChild,
+  setDraggable: SetDraggable,
+  setChildrenInteractive: SetChildrenInteractive,
+  broadcastEvent: BroadcastEvent,
+  interactionCooldown: InteractionCooldown,
 
 };
 
 Object.assign(
-    methods,
-    PaddingMethods,
-    AddChildMethods,
-    RemoveChildMethods,
-    GetParentSizerMethods,
-    ScaleMethods,
-    FadeMethods,
-    EaseMoveMethods,
-    ShakeMethods,
-    EaseDataMethods,
-    ClickMethods,
-    ClickOutsideMethods,
-    TouchingMethods,
-    HideMethods,
-    ModalMethods,
-    GetShownChildrenMethods,
+  methods,
+  PaddingMethods,
+  AddChildMethods,
+  RemoveChildMethods,
+  GetParentSizerMethods,
+  ScaleMethods,
+  FadeMethods,
+  EaseMoveMethods,
+  ShakeMethods,
+  EaseDataMethods,
+  ClickMethods,
+  ClickOutsideMethods,
+  TouchingMethods,
+  HideMethods,
+  ModalMethods,
+  GetShownChildrenMethods,
 );
 
 export default methods;

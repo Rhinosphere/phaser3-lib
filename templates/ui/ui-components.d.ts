@@ -46,6 +46,7 @@ import Label from './label/Label';
 import SimpleLabel from './simplelabel/SimpleLabel';
 import TitleLabel from './titlelabel/TitleLabel';
 import NameValueLabel from './namevaluelabel/NameValueLabel';
+import ImageInputLabel from './imageinputlabel/ImageInputLabel';
 import Buttons from './buttons/Buttons';
 import GridButtons from './gridbuttons/GridButtons';
 import FixWidthButtons from './fixwidthbuttons/FixWidthButtons';
@@ -68,6 +69,7 @@ import PerspectiveCard from './perspectivecard/PerspectiveCard';
 import TabPages from './tabpages/TabPages';
 import Folder from './folder/Folder';
 import TextArea from './textarea/TextArea';
+import TextAreaInput from './textareainput/TextAreaInput';
 import ScrollablePanel from './scrollablepanel/ScrollablePanel';
 import Toast from './toast/Toast';
 import ColorComponents from './colorinput/colorcomponents/ColorComponents';
@@ -170,6 +172,7 @@ export {
     SimpleLabel,
     TitleLabel,
     NameValueLabel,
+    ImageInputLabel,
     Buttons,
     GridButtons,
     FixWidthButtons,
@@ -192,6 +195,7 @@ export {
     TabPages,
     Folder,
     TextArea,
+    TextAreaInput,
     ScrollablePanel,
     Toast,
     ColorComponents,

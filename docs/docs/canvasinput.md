@@ -88,8 +88,6 @@ var txt = scene.add.rexCanvasInput({
     width: undefined, 
     height: undefined,
 
-    padding: 0,  // {left: 0, right: 0, top: 0, bottom: 0}
-
     background: {
         color: null,
         color2: null,
@@ -147,12 +145,6 @@ var txt = scene.add.rexCanvasInput({
     text: '',
 
     wrap: {
-        padding: {
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0
-        },
         lineHeight: undefined,
         useDefaultLineHeight: true,
         maxLines: 1,
@@ -373,30 +365,6 @@ txt.close();
 var isOpened = txt.isOpened;
 ```
 
-### Read only
-
-- Enable read only
-    ```javascript
-    txt.setReadOnly();
-    // txt.setReadOnly(true);
-    ```
-    or
-    ```javascript
-    txt.readOnly = true;
-    ```
-- Disable read only
-    ```javascript
-    txt.setReadOnly(false);
-    ```
-    or
-    ```javascript
-    txt.readOnly = false;
-    ```
-- Get read only
-    ```javascript
-    var readOnlyEanble = txt.readOnly;
-    ```
-
 ### Text
 
 - Display text on [dynamic text game object](dynamictext.md)
@@ -449,6 +417,30 @@ var isOpened = txt.isOpened;
     ```javascript
     txt.setValue(value);
     // txt.value = value;
+    ```
+
+### Read only
+
+- Enable read only
+    ```javascript
+    txt.setReadOnly();
+    // txt.setReadOnly(true);
+    ```
+    or
+    ```javascript
+    txt.readOnly = true;
+    ```
+- Disable read only
+    ```javascript
+    txt.setReadOnly(false);
+    ```
+    or
+    ```javascript
+    txt.readOnly = false;
+    ```
+- Get read only
+    ```javascript
+    var readOnlyEanble = txt.readOnly;
     ```
 
 ### Size
@@ -508,6 +500,11 @@ var isOpened = txt.isOpened;
     ```javascript
     txt.on('close', function() {
         
+    })
+    ```
+- Close editor by ENTER key down
+    ```javascript
+    txt.on('keydown-ENTER', function(){
     })
     ```
 - Not a number input

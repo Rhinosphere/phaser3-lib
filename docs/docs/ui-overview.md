@@ -102,6 +102,7 @@ See this [example](https://github.com/rexrainbow/phaser3-rex-notes/blob/master/e
 1. [Label](ui-label.md): A container with an icon, text, and background.
 1. [Menu](ui-menu.md): A container with buttons and sub-menu.
 1. [Name-value label](ui-namevaluelabel.md): A container with name text, value text in a row, with a [horizontal line progress bar](shape-lineprogress.md), and an icon, background.
+1. [Image input label](ui-imageinputlabel.md): A container with a canvas icon, text, and background. Click icon to popup a (image) file chooser dialog, display selected image on canvas.
 1. [Number-bar](ui-numberbar.md): A container with an icon, slider, text, and background.
 1. [Overlap sizer](ui-overlapsizer.md): Layout children game objects overlapped.
 1. [Pages](ui-pages.md): A container with pages, only current page is visible.
@@ -114,6 +115,7 @@ See this [example](https://github.com/rexrainbow/phaser3-rex-notes/blob/master/e
 1. [Tab-pages](ui-tabpages.md): A container with tabs and pages, only current page is visible.
 1. [Tabs](ui-tabs.md): A container with 4 groups of buttons around a center panel.
 1. [TextArea](ui-textarea.md): A container with a text, slider, and scroller.
+1. [TextAreaInput](ui-textareainput.md): A container with a canvasInput, and slider.
 1. [Textbox](ui-textbox.md): A container with an icon, ([typing](texttyping.md) and [paging](textpage.md)) text, and background.
 1. [Title label](ui-titlelabel.md): A container with title, text in two rows, and an icon, background.
 1. [Toast](ui-toast.md): Show text message for a short while.
@@ -643,7 +645,7 @@ See this [example](https://github.com/rexrainbow/phaser3-rex-notes/blob/master/e
 
 1. [Input text](inputtext.md): [Input DOM element](https://www.w3schools.com/tags/tag_input.asp).
     ```javascript
-    var image = scene.rexUI.add.inputText(config);
+    var inputText = scene.rexUI.add.inputText(config);
     ```
     or
     ```javascript
@@ -658,7 +660,7 @@ See this [example](https://github.com/rexrainbow/phaser3-rex-notes/blob/master/e
     ```
 1. [File chooser](filechooser.md): Create a transparent file chooser button (`<input type="file">`).
     ```javascript
-    var image = scene.rexUI.add.fileChooser(config);
+    var fileChooser = scene.rexUI.add.fileChooser(config);
     ```
     or
     ```javascript
@@ -673,7 +675,7 @@ See this [example](https://github.com/rexrainbow/phaser3-rex-notes/blob/master/e
     ```
 1. [File drop zone](filedropzone.md): Create a div element for dropping file(s).
     ```javascript
-    var image = scene.rexUI.add.fileDropZone(config);
+    var fileDropZone = scene.rexUI.add.fileDropZone(config);
     ```
     or
     ```javascript

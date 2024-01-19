@@ -261,7 +261,7 @@ fileChooser.loadFilePromise(file, loaderType, key, cahceType)
 ### Open file chooser
 
 !!! failure
-    This method can't run at ipad.
+    This method won't work at ios.
 
 !!! note
     Open a file chooser dialog **under any touch event**. i.e. User can't open file chooser dialog directly.
@@ -297,6 +297,18 @@ scene.plugins.get('rexFileChooser').open({
             var objectURL = URL.createObjectURL(file);
             ```
     - Length `files` is 0 : User cancels file chooser dialog.
+
+### Enable clicking-open
+
+- Enable
+    ```javascript
+    fileChooser.setOpenEnable();
+    // fileChooser.setOpenEnable(true);
+    ```
+- Disable
+    ```javascript
+    fileChooser.setOpenEnable(false)
+    ```
 
 ### Other properties
 

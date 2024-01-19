@@ -19,6 +19,11 @@ A container with a panel, slider, and scroller.
 - [XY sliders](https://codepen.io/rexrainbow/pen/VwVVyYV)
 - [Min-width panel](https://codepen.io/rexrainbow/pen/JjeqGLb)
 - [Drag,resize panel](https://codepen.io/rexrainbow/pen/wvRvrzr)
+- Drag&drop items between panels : 
+    - [With scroller](https://codepen.io/rexrainbow/pen/jOXPXOg)
+    - [Without scroller](https://codepen.io/rexrainbow/pen/KKbdPRy)
+- [Nested scroll-able panel](https://codepen.io/rexrainbow/pen/RwEoLzy)
+
 
 ## Usage
 
@@ -161,7 +166,7 @@ var panel = scene.rexUI.add.scrollablePanel({
 
     mouseWheelScroller: false,
     // mouseWheelScroller: {
-    //     focus: false,
+    //     focus: true,
     //     speed: 0.1
     // },
 
@@ -329,8 +334,8 @@ var panel = scene.rexUI.add.scrollablePanel({
 - `scrollerX`, `scrollerY` : Configuration of scrollerX, scrollerY behavior, for two-sliders mode.
 - `mouseWheelScroller` : Configuration of mouse-wheel-scroller behavior.
     - `mouseWheelScroller.focus` : 
-        - `true` : Only scrolling when cursor is over panel.
-        - `false` : Scrolling without checking cursor. Default behavior.
+        - `true` : Only scrolling when cursor is over panel.  Default behavior.
+        - `false` : Scrolling without checking cursor.
     - `mouseWheelScroller.speed` : Scrolling speed, default value is `0.1`.
     - Set to `false` to skip creating mouse-wheel-scroller. Default behavior.
 - `mouseWheelScrollerX`, `mouseWheelScrollerY` : Configuration of mouse-wheel-scrollerX, or mouse-wheel-scrollerY behavior, for two-sliders mode.
@@ -543,6 +548,20 @@ panel.scrollToChild(child, align);
         ```javascript
         var enable = panel.scrollerEnable;
         ```
+- Mouse-Wheel-Scroller
+    - Set enable state
+        ```javascript
+        panel.setMouseWheelScrollerEnable(enabled);
+        ```
+        or
+        ```javascript
+        panel.mouseWheelScrollerEnable = enabled;
+        ```
+    - Get enable state
+        ```javascript
+        var enable = panel.mouseWheelScrollerEnable;
+        ```
+
 
 ### Event
 
@@ -601,6 +620,10 @@ See [sizer object](ui-sizer.md), [base sizer object](ui-basesizer.md), [containe
         ```javascript
         var scroller = panel.getElement('scroller');
         ```
+    - Scrollable-block, registering scroller and children-interactive on it.
+        ```javascript
+        var scrollableBlock = panel.getElement('scrollableBlock');
+        ```
 - Get by name
     ```javascript
     var gameObject = panel.getElement('#' + name);
@@ -625,6 +648,8 @@ Applies [click](button.md), [tap](gesture-tap.md), [press](gesture-press.md), [s
 panel.setChildrenInteractive({
     targets: targetSizers,
 
+    // dropZone: false,
+
     // click: {mode: 'release', clickInterval: 100},
 
     // over: undefined,
@@ -641,6 +666,10 @@ panel.setChildrenInteractive({
 ```
 
 - `targetSizers` : Array of target children-sizer.
+- `dropZone` :
+    - `true` : Enable [drop Zone](touchevents.md#drop-zone) on scrollable area.
+    - `false` : Do nothing.
+
 
 See [Base-sizer/Set children interactive](ui-basesizer.md#set-children-interactive)
 

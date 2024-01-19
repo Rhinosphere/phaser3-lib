@@ -1030,15 +1030,24 @@
       if (destroyMask === undefined) {
         destroyMask = false;
       }
+      var self = this;
 
       // Clear current mask
       this._mask = null;
-      // Clear children mask
+      this.setChildMaskVisible(this);
+      // Also set maskVisible to `true`
+
       this.children.forEach(function (child) {
+        // Clear child's mask
         if (child.clearMask) {
           child.clearMask(false);
         }
+        if (!child.hasOwnProperty('isRexContainerLite')) {
+          self.setChildMaskVisible(child);
+          // Set child's maskVisible to `true`
+        }
       });
+
       if (destroyMask && this.mask) {
         this.mask.destroy();
       }
@@ -1053,15 +1062,34 @@
     if (descending === undefined) {
       descending = false;
     }
-    var displayList = gameObjects[0].displayList;
-    if (displayList) displayList.depthSort();
+    var itemList;
+    var gameObject = gameObjects[0];
+    if (gameObject.displayList) {
+      // Inside a scene or a layer
+      itemList = gameObject.displayList; // displayList
+    } else if (gameObject.parentContainer) {
+      // Inside a container
+      itemList = gameObject.parentContainer.list; // array
+    } else {
+      itemList = gameObject.scene.sys.displayList; // displayList
+      // ??       
+    }
+
+    if (itemList.depthSort) {
+      // Is a displayList object
+      itemList.depthSort();
+      itemList = itemList.list;
+      // itemList is an array now
+    }
+
+    // itemList is an array
     if (descending) {
       gameObjects.sort(function (childA, childB) {
-        if (displayList) return displayList.getIndex(childB) - displayList.getIndex(childA);else return 0;
+        return itemList.indexOf(childB) - itemList.indexOf(childA);
       });
     } else {
       gameObjects.sort(function (childA, childB) {
-        if (displayList) return displayList.getIndex(childA) - displayList.getIndex(childB);else return 0;
+        return itemList.indexOf(childA) - itemList.indexOf(childB);
       });
     }
     return gameObjects;
@@ -1408,38 +1436,77 @@
     }
   };
 
+  var ContainerKlass = Phaser.GameObjects.Container;
+  var IsContainerGameObject = function IsContainerGameObject(gameObject) {
+    return gameObject instanceof ContainerKlass;
+  };
+
+  var LayerKlass = Phaser.GameObjects.Layer;
+  var IsLayerGameObject = function IsLayerGameObject(gameObject) {
+    return gameObject instanceof LayerKlass;
+  };
+
+  var GetValidChildren = function GetValidChildren(parent) {
+    var children = parent.getAllChildren([parent]);
+    children = children.filter(function (gameObject) {
+      return !!gameObject.displayList ||
+      // At scene's displayList or at a layer
+      !!gameObject.parentContainer; // At a container
+    });
+
+    return children;
+  };
+  var AddToContainer = function AddToContainer(p3Container) {
+    var gameObjects = GetValidChildren(this);
+    SortGameObjectsByDepth(gameObjects);
+    p3Container.add(gameObjects);
+    return this;
+  };
+  var RemoveFromContainer = function RemoveFromContainer(p3Container, descending, addToScene) {
+    var gameObjects = GetValidChildren(this);
+    SortGameObjectsByDepth(gameObjects, descending);
+    p3Container.remove(gameObjects);
+    if (addToScene) {
+      gameObjects.forEach(function (gameObject) {
+        gameObject.addToDisplayList();
+      });
+    }
+    return this;
+  };
   var P3Container = {
     addToContainer: function addToContainer(p3Container) {
+      if (!IsContainerGameObject(p3Container)) {
+        return this;
+      }
       this._setParentContainerFlag = true;
-      var gameObjects = this.getAllChildren([this]);
-      SortGameObjectsByDepth(gameObjects);
-      p3Container.add(gameObjects);
+      AddToContainer.call(this, p3Container);
       this._setParentContainerFlag = false;
       return this;
     },
     addToLayer: function addToLayer(layer) {
-      this.addToContainer(layer);
+      if (!IsLayerGameObject(layer)) {
+        return this;
+      }
+      AddToContainer.call(this, layer);
       return this;
     },
     removeFromContainer: function removeFromContainer() {
       if (!this.parentContainer) {
         return this;
       }
-
-      // Will add gameObjects to scene
-      var gameObjects = this.getAllChildren([this]).filter(function (gameObject) {
-        return !!gameObject.scene;
-      });
-      if (gameObjects.length === 0) {
+      this._setParentContainerFlag = true;
+      RemoveFromContainer.call(this, this.parentContainer, true, false);
+      this._setParentContainerFlag = false;
+      return this;
+    },
+    removeFromLayer: function removeFromLayer(addToScene) {
+      if (addToScene === undefined) {
+        addToScene = true;
+      }
+      if (!IsLayerGameObject(this.displayList)) {
         return this;
       }
-      this._setParentContainerFlag = true;
-      if (gameObjects.length > 1) {
-        SortGameObjectsByDepth(gameObjects);
-        gameObjects.reverse();
-      }
-      this.parentContainer.remove(gameObjects);
-      this._setParentContainerFlag = false;
+      RemoveFromContainer.call(this, this.displayList, false, addToScene);
       return this;
     },
     getParentContainer: function getParentContainer() {
@@ -1459,7 +1526,7 @@
       return null;
     },
     addToParentContainer: function addToParentContainer(gameObject) {
-      // Don't add to layer if gameObject is not in any displayList
+      // Do nothing if gameObject is not in any displayList
       if (!gameObject.displayList) {
         return this;
       }
@@ -1478,7 +1545,7 @@
     }
   };
 
-  var Layer = {
+  var RenderLayer = {
     hasLayer: function hasLayer() {
       return !!this.privateRenderLayer;
     },
@@ -1548,7 +1615,13 @@
       if (!layer) {
         return this;
       }
-      layer.remove(gameObject);
+      if (gameObject.isRexContainerLite) {
+        // Remove containerLite and its children
+        gameObject.removeFromLayer(true);
+      } else {
+        // Remove gameObject directly
+        layer.remove(gameObject);
+      }
       state.layer = null;
       return this;
     }
@@ -2028,11 +2101,11 @@
     return this;
   };
 
-  var methods = {
+  var methods$1 = {
     changeOrigin: ChangeOrigin,
     drawBounds: DrawBounds
   };
-  Object.assign(methods, Parent, AddChild, RemoveChild, ChildState, Transform, Position, Rotation, Scale, Visible, Alpha, Active, ScrollFactor, Mask, Depth, Children, Tween, P3Container, Layer, RenderTexture);
+  Object.assign(methods$1, Parent, AddChild, RemoveChild, ChildState, Transform, Position, Rotation, Scale, Visible, Alpha, Active, ScrollFactor, Mask, Depth, Children, Tween, P3Container, RenderLayer, RenderTexture);
 
   var ContainerLite = /*#__PURE__*/function (_Base) {
     _inherits(ContainerLite, _Base);
@@ -2301,31 +2374,64 @@
     }]);
     return ContainerLite;
   }(Base);
-  Object.assign(ContainerLite.prototype, methods);
+  Object.assign(ContainerLite.prototype, methods$1);
 
-  var FitTo = function FitTo(child, parent, out) {
+  var FitTo = function FitTo(source, target, scaleUp, out) {
+    if (scaleUp === undefined) {
+      scaleUp = true;
+    }
     if (out === undefined) {
       out = {};
     } else if (out === true) {
       out = globalSize;
     }
-    if (child.width <= parent.width && child.height <= parent.height) {
-      out.width = child.width;
-      out.height = child.height;
-      return out;
-    }
-    var childRatio = child.width / child.height;
-    out.width = Math.min(child.width, parent.width);
-    out.height = Math.min(child.height, parent.height);
-    var ratio = out.width / out.height;
-    if (ratio < childRatio) {
-      out.height = out.width / childRatio;
-    } else if (ratio > childRatio) {
-      out.width = out.height * childRatio;
+    var sourceWidth = source.width,
+      sourceHeight = source.height,
+      targetWidth = target.width,
+      targetHeight = target.height;
+    if (sourceWidth <= targetWidth && sourceHeight <= targetHeight) {
+      if (scaleUp) {
+        var sourceRatio = sourceWidth / sourceHeight;
+        var targetRatio = targetWidth / targetHeight;
+        if (targetRatio < sourceRatio) {
+          out.width = targetWidth;
+          out.height = targetWidth / sourceRatio;
+        } else if (targetRatio > sourceRatio) {
+          out.width = targetHeight * sourceRatio;
+          out.height = targetHeight;
+        } else {
+          out.width = targetWidth;
+          out.height = targetHeight;
+        }
+      } else {
+        out.width = sourceWidth;
+        out.height = sourceHeight;
+      }
+    } else {
+      var sourceRatio = sourceWidth / sourceHeight;
+      out.width = Math.min(sourceWidth, targetWidth);
+      out.height = Math.min(sourceHeight, targetHeight);
+      var ratio = out.width / out.height;
+      if (ratio < sourceRatio) {
+        out.height = out.width / sourceRatio;
+      } else if (ratio > sourceRatio) {
+        out.width = out.height * sourceRatio;
+      }
     }
     return out;
   };
   var globalSize = {};
+
+  var ScaleImage = function ScaleImage() {
+    var image = this.image;
+    var result = FitTo(image, {
+      width: this.width,
+      height: this.height
+    }, this.scaleUp, true);
+    image.setDisplaySize(result.width, result.height);
+    this.resetChildScaleState(image);
+    return this;
+  };
 
   var FlipMethods = {
     setFlipX: function setFlipX(value) {
@@ -2354,6 +2460,70 @@
       this.flipY = false;
       return this;
     }
+  };
+
+  var methods = {
+    scaleImage: ScaleImage
+  };
+  Object.assign(methods, FlipMethods);
+
+  var ResizeGameObject = function ResizeGameObject(gameObject, newWidth, newHeight) {
+    if (!gameObject || newWidth === undefined && newHeight === undefined) {
+      return;
+    }
+    if (HasResizeMethod(gameObject)) {
+      // Has `resize`, or `setSize` method
+      if (newWidth === undefined) {
+        newWidth = gameObject.width;
+      }
+      if (newHeight === undefined) {
+        newHeight = gameObject.height;
+      }
+      if (gameObject.resize) {
+        gameObject.resize(newWidth, newHeight);
+      } else {
+        gameObject.setSize(newWidth, newHeight);
+      }
+    } else {
+      // Set display width/height
+      if (newWidth !== undefined) {
+        gameObject.displayWidth = newWidth;
+      }
+      if (newHeight !== undefined) {
+        gameObject.displayHeight = newHeight;
+      }
+    }
+  };
+  var ExcludeClassList = [Phaser.GameObjects.Image, Phaser.GameObjects.Sprite, Phaser.GameObjects.Mesh, Phaser.GameObjects.Shader, Phaser.GameObjects.Video];
+  var HasResizeMethod = function HasResizeMethod(gameObject) {
+    // 1st pass : Has `resize` method?
+    if (gameObject.resize) {
+      return true;
+    }
+
+    // 2nd pass : Has `setSize` method?
+    if (!gameObject.setSize) {
+      return false;
+    }
+    for (var i = 0, cnt = ExcludeClassList.length; i < cnt; i++) {
+      var excludeClass = ExcludeClassList[i];
+      if (excludeClass && gameObject instanceof excludeClass) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  var ResizeBackground = function ResizeBackground() {
+    var background = this.background;
+    if (!background) {
+      return this;
+    }
+    background.setOrigin(this.originX, this.originY);
+    background.setPosition(this.x, this.y);
+    ResizeGameObject(background, this.displayWidth, this.displayHeight);
+    this.resetChildScaleState(background);
+    return this;
   };
 
   var IsPlainObject = Phaser.Utils.Objects.IsPlainObject;
@@ -2385,8 +2555,14 @@
       }
       _this = _super.call(this, scene, x, y, 1, 1);
       _this.type = 'rexImageBox';
+      var background = GetValue(config, 'background', true);
+      if (background) {
+        _this.add(background);
+      }
+      _this.background = background;
       _this.add(image);
       _this.image = image;
+      _this.scaleUp = GetValue(config, 'scaleUp', false);
       var width = GetValue(config, 'width', image.width);
       var height = GetValue(config, 'height', image.height);
       _this.resize(width, height);
@@ -2427,21 +2603,10 @@
         this.image.setFlipY(value);
       }
     }, {
-      key: "scaleImage",
-      value: function scaleImage() {
-        var image = this.image;
-        var result = FitTo(image, {
-          width: this.width,
-          height: this.height
-        }, true);
-        image.setDisplaySize(result.width, result.height);
-        this.resetChildScaleState(image);
-        return this;
-      }
-    }, {
       key: "resize",
       value: function resize(width, height) {
         _get(_getPrototypeOf(ImageBox.prototype), "resize", this).call(this, width, height);
+        ResizeBackground.call(this);
         this.scaleImage();
         return this;
       }
@@ -2461,7 +2626,7 @@
     }]);
     return ImageBox;
   }(ContainerLite);
-  Object.assign(ImageBox.prototype, FlipMethods);
+  Object.assign(ImageBox.prototype, methods);
 
   function Factory (x, y, texture, frame, config) {
     var gameObject = new ImageBox(this.scene, x, y, texture, frame, config);

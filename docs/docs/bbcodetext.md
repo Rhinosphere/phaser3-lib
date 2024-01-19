@@ -176,10 +176,13 @@ Default style
     fixedWidth: 0,
     fixedHeight: 0,
     testString: '|MÉqgy',
+    
     wrap: {
         mode: 'none'     // 0|'none'|1|'word'|2|'char'|'character'
         width: null
     },
+    // wordWrap: { width: 0 },   // Compatible with Text game object
+
     // rtl: false,
     metrics: false,
     // metrics: {
@@ -344,6 +347,10 @@ var txt = scene.make.rexBBCodeText({
 - Get plain text
     ```javascript
     var plainText = txt.getPlainText();
+    ```
+- Get sub-string
+    ```javascript
+    var text = txt.getText(start, end);
     ```
 - Set
     ```javascript

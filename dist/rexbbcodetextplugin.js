@@ -750,6 +750,17 @@
         if (setDefaults === undefined) {
           setDefaults = false;
         }
+
+        // Compatible with Text game object
+        if (style && style.hasOwnProperty('wordWrap')) {
+          var wordWrap = style.wordWrap;
+          if (wordWrap.hasOwnProperty('width')) {
+            style.wrap = {
+              mode: 'word',
+              width: wordWrap.width
+            };
+          }
+        }
         if (style && style.hasOwnProperty('wrap')) {
           var wrap = style.wrap;
           if (wrap.hasOwnProperty('mode')) {
@@ -1716,7 +1727,7 @@
       // Underline
       if (curStyle.underlineThickness > 0 && pen.width > 0) {
         var lineOffsetY = offsetY + curStyle.underlineOffset - curStyle.underlineThickness / 2;
-        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.underlineThickness, curStyle.underlineColor);
+        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.underlineThickness, curStyle.underlineColor, curStyle);
       }
 
       // Text
@@ -1732,7 +1743,7 @@
       // Strikethrough
       if (curStyle.strikethroughThickness > 0 && pen.width > 0) {
         var lineOffsetY = offsetY + curStyle.strikethroughOffset - curStyle.strikethroughThickness / 2;
-        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.strikethroughThickness, curStyle.strikethroughColor);
+        this.drawLine(offsetX, lineOffsetY, pen.width, curStyle.strikethroughThickness, curStyle.strikethroughColor, curStyle);
       }
       context.restore();
       if (pen.hasAreaMarker && pen.width > 0) {
@@ -1764,12 +1775,13 @@
       var canvas = this.canvas;
       this.context.clearRect(0, 0, canvas.width, canvas.height);
     },
-    drawLine: function drawLine(x, y, width, height, color) {
+    drawLine: function drawLine(x, y, width, height, color, style) {
       if (this.autoRound) {
         x = Math.round(x);
         y = Math.round(y);
       }
       var context = this.context;
+      style.syncShadow(context, style.shadowStroke);
       var savedLineCap = context.lineCap;
       context.lineCap = 'butt';
       context.strokeStyle = color;
@@ -2140,15 +2152,18 @@
     }, {
       key: "getSliceTagText",
       value: function getSliceTagText(start, end, wrap) {
-        if (start === undefined) {
-          start = 0;
+        var lastPen = this.lastPen;
+        if (lastPen == null) {
+          return '';
         }
-        if (end === undefined) {
-          var lastPen = this.lastPen;
-          if (lastPen == null) {
-            return "";
-          }
-          end = lastPen.endIndex;
+        var lastPenEnd = lastPen.endIndex;
+        if (start === undefined || start === 0) {
+          // Image pen before first character
+          start = -1;
+        }
+        if (end === undefined || end === lastPenEnd) {
+          // Image pen after last character
+          end = lastPenEnd + 1;
         }
         if (wrap === undefined) {
           wrap = false;
@@ -3442,17 +3457,33 @@
     }, {
       key: "getWrappedText",
       value: function getWrappedText(text, start, end) {
+        if (typeof text === 'number') {
+          end = start;
+          start = text;
+          text = undefined;
+        }
         text = this.canvasText.getText(text, start, end, true);
         return text.split(SPLITREGEXP);
       }
     }, {
       key: "getPlainText",
       value: function getPlainText(text, start, end) {
+        if (typeof text === 'number') {
+          end = start;
+          start = text;
+          text = undefined;
+        }
         return this.canvasText.getPlainText(text, start, end);
       }
     }, {
       key: "getText",
       value: function getText(text, start, end, wrap) {
+        if (typeof text === 'number') {
+          wrap = end;
+          end = start;
+          start = text;
+          text = undefined;
+        }
         if (wrap === undefined) {
           wrap = false;
         }
@@ -3461,6 +3492,11 @@
     }, {
       key: "getSubString",
       value: function getSubString(text, start, end) {
+        if (typeof text === 'number') {
+          end = start;
+          start = text;
+          text = undefined;
+        }
         return this.getText(text, start, end);
       }
     }, {

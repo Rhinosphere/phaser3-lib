@@ -912,18 +912,18 @@
       return false;
     }
     var bobPosition = CanvasPositionToBobPosition(canvasX, canvasY, this, true);
-    return GetBounds(this).contains(bobPosition.x, bobPosition.y);
+    return GetBobBounds(this).contains(bobPosition.x, bobPosition.y);
   };
-  var GetBounds = function GetBounds(bob) {
-    if (globBounds === undefined) {
-      globBounds = new Rectangle();
+  var GetBobBounds = function GetBobBounds(bob) {
+    if (bobBounds === undefined) {
+      bobBounds = new Rectangle();
     }
     var x = bob.drawTLX,
       y = bob.drawTLY;
-    globBounds.setTo(x, y, bob.drawTRX - x, bob.drawBLY - y);
-    return globBounds;
+    bobBounds.setTo(x, y, bob.drawTRX - x, bob.drawBLY - y);
+    return bobBounds;
   };
-  var globBounds;
+  var bobBounds;
 
   var RotateAround = Phaser.Math.RotateAround;
   var BobPositionToCanvasPosition = function BobPositionToCanvasPosition(bob, bobX, bobY, out) {
@@ -1008,6 +1008,8 @@
       _classCallCheck(this, RenderBase);
       _this = _super.call(this, parent, type);
       _this.renderable = true;
+      _this.scrollFactorX = 1;
+      _this.scrollFactorY = 1;
       _this.toLocalPosition = true;
       _this.originX = 0;
       _this.offsetX = 0; // Override
@@ -1089,6 +1091,28 @@
       value: function setInitialPosition(x, y) {
         this.x0 = x;
         this.y0 = y;
+        return this;
+      }
+    }, {
+      key: "setScrollFactorX",
+      value: function setScrollFactorX(x) {
+        this.scrollFactorX = x;
+        return this;
+      }
+    }, {
+      key: "setScrollFactorY",
+      value: function setScrollFactorY(y) {
+        this.scrollFactorY = y;
+        return this;
+      }
+    }, {
+      key: "setScrollFactor",
+      value: function setScrollFactor(x, y) {
+        if (y === undefined) {
+          y = x;
+        }
+        this.scrollFactorX = x;
+        this.scrollFactorY = y;
         return this;
       }
     }, {
@@ -1336,12 +1360,14 @@
     }, {
       key: "drawX",
       get: function get() {
-        return this.x + this.leftSpace + this.offsetX - this.originX * this.width;
+        var x = this.x + this.leftSpace + this.offsetX - this.originX * this.width;
+        return this.parent._textOX * this.scrollFactorX + x;
       }
     }, {
       key: "drawY",
       get: function get() {
-        return this.y + this.offsetY;
+        var y = this.y + this.offsetY;
+        return this.parent._textOY * this.scrollFactorY + y;
       }
 
       // Override
@@ -1799,6 +1825,7 @@
       var _this;
       _classCallCheck(this, Background);
       _this = _super.call(this, parent, 'background');
+      _this.setScrollFactor(0);
       _this.setColor(GetValue$c(config, 'color', null), GetValue$c(config, 'color2', null), GetValue$c(config, 'horizontalGradient', true));
       _this.setStroke(GetValue$c(config, 'stroke', null), GetValue$c(config, 'strokeThickness', 2));
       _this.setCornerRadius(GetValue$c(config, 'cornerRadius', 0), GetValue$c(config, 'cornerIteration', null));
@@ -1938,6 +1965,7 @@
       var _this;
       _classCallCheck(this, InnerBounds);
       _this = _super.call(this, parent, 'innerbounds');
+      _this.setScrollFactor(0);
       _this.setColor(GetValue$b(config, 'color', null), GetValue$b(config, 'color2', null), GetValue$b(config, 'horizontalGradient', true));
       _this.setStroke(GetValue$b(config, 'stroke', null), GetValue$b(config, 'strokeThickness', 2));
       return _this;
@@ -2439,13 +2467,13 @@
     if (height === undefined) {
       height = 0;
     }
-    var dirty = this.fixedWidth !== width || this.fixedHeight !== height;
-    if (!dirty) {
+    if (this.fixedWidth === width && this.fixedHeight === height) {
       return this;
     }
     this.fixedWidth = width;
     this.fixedHeight = height;
-    this.dirty = true;
+    this.dirty = true; // -> this.updateTexture();
+
     this.setCanvasSize(width > 0 ? width : this.width, height > 0 ? height : this.height);
     return this;
   };
@@ -3393,6 +3421,35 @@
     return this;
   };
 
+  var CreateWrapResultData = function CreateWrapResultData(config) {
+    var data = {
+      callback: undefined,
+      start: 0,
+      // Next start index
+      isLastPage: false,
+      // Is last page
+      maxLines: undefined,
+      padding: undefined,
+      letterSpacing: undefined,
+      hAlign: undefined,
+      vAlign: undefined,
+      children: [],
+      // Wrap result
+      lines: [],
+      // Wrap result in lines
+
+      // WordWrap
+      maxLineWidth: 0,
+      linesHeight: 0,
+      lineHeight: undefined,
+      // VerticalWrap
+      maxLineHeight: 0,
+      linesWidth: 0,
+      lineWidth: undefined
+    };
+    return Object.assign(data, config);
+  };
+
   var GetWord = function GetWord(children, startIndex, charMode, result) {
     if (result === undefined) {
       result = {
@@ -3589,28 +3646,22 @@
     var hAlign = GetValue$9(config, 'hAlign', 0);
     var vAlign = GetValue$9(config, 'vAlign', 0);
     var charWrap = GetValue$9(config, 'charWrap', false);
-    var result = {
+    var result = CreateWrapResultData({
+      // Override properties
       callback: 'runWordWrap',
       start: startIndex,
       // Next start index
-      isLastPage: false,
-      // Is last page
       padding: this.wrapPadding,
-      ascent: ascent,
-      lineHeight: lineHeight,
-      maxLines: maxLines,
-      wrapWidth: wrapWidth,
       letterSpacing: letterSpacing,
+      maxLines: maxLines,
       hAlign: hAlign,
       vAlign: vAlign,
-      charWrap: charWrap,
-      children: [],
-      // Word-wrap result
-      lines: [],
-      // Word-wrap result in lines
-      maxLineWidth: 0,
-      linesHeight: 0
-    };
+      // Specific properties
+      ascent: ascent,
+      lineHeight: lineHeight,
+      wrapWidth: wrapWidth,
+      charWrap: charWrap
+    });
 
     // Set all children to inactive
     var children = this.children;
@@ -3815,13 +3866,13 @@
 
     var showAllLines = maxLines === 0;
 
-    // Get fixedChildHeight
-    var fixedChildHeight = GetValue$8(config, 'fixedChildHeight', undefined);
-    if (fixedChildHeight === undefined) {
+    // Get fixedCharacterHeight
+    var fixedCharacterHeight = GetValue$8(config, 'fixedCharacterHeight', undefined);
+    if (fixedCharacterHeight === undefined) {
       var charPerLine = GetValue$8(config, 'charPerLine', undefined);
       if (charPerLine !== undefined) {
         var innerHeight = this.fixedHeight - paddingVertical;
-        fixedChildHeight = Math.floor(innerHeight / charPerLine);
+        fixedCharacterHeight = Math.floor(innerHeight / charPerLine);
       }
     }
 
@@ -3839,28 +3890,22 @@
     var rtl = GetValue$8(config, 'rtl', true);
     var hAlign = GetValue$8(config, 'hAlign', rtl ? 2 : 0);
     var vAlign = GetValue$8(config, 'vAlign', 0);
-    var result = {
+    var result = CreateWrapResultData({
+      // Override properties
       callback: 'runVerticalWrap',
       start: startIndex,
       // Next start index
-      isLastPage: false,
-      // Is last page
       padding: this.wrapPadding,
-      lineWidth: lineWidth,
-      maxLines: maxLines,
-      fixedChildHeight: fixedChildHeight,
-      wrapHeight: wrapHeight,
       letterSpacing: letterSpacing,
+      maxLines: maxLines,
       hAlign: hAlign,
       vAlign: vAlign,
-      rtl: rtl,
-      children: [],
-      // Word-wrap result
-      lines: [],
-      // Word-wrap result in lines
-      maxLineHeight: 0,
-      linesWidth: 0
-    };
+      // Specific properties
+      lineWidth: lineWidth,
+      fixedCharacterHeight: fixedCharacterHeight,
+      wrapHeight: wrapHeight,
+      rtl: rtl
+    });
 
     // Set all children to active
     var children = this.children;
@@ -3893,7 +3938,7 @@
         lastLine.push(child);
         continue;
       }
-      var childHeight = (fixedChildHeight !== undefined ? fixedChildHeight : child.height) + letterSpacing;
+      var childHeight = (fixedCharacterHeight !== undefined ? fixedCharacterHeight : child.height) + letterSpacing;
       // Next line
       var isNewLineChar = IsNewLineChar(child);
       var isPageBreakChar = IsPageBreakChar(child);
@@ -3995,6 +4040,43 @@
     },
     setHAlign: function setHAlign(align) {
       this.wrapConfig.hAlign = align;
+      return this;
+    }
+  };
+
+  var SetTextOXYMethods$1 = {
+    setTextOX: function setTextOX(ox) {
+      if (ox === this._textOX) {
+        return this;
+      }
+      this._textOX = ox;
+      return this;
+    },
+    setTextOY: function setTextOY(oy) {
+      if (oy === this._textOY) {
+        return this;
+      }
+      this._textOY = oy;
+      return this;
+    },
+    setTextOXY: function setTextOXY(ox, oy) {
+      if (ox === this._textOX && oy === this._textOY) {
+        return;
+      }
+      this._textOX = ox;
+      this._textOY = oy;
+      return this;
+    },
+    addTextOX: function addTextOX(incX) {
+      this.setTextOX(this._textOX + incX);
+      return this;
+    },
+    addTextOY: function addTextOY(incY) {
+      this.setTextOY(this._textOY + incY);
+      return this;
+    },
+    addTextOXY: function addTextOXY(incX, incY) {
+      this.setTextOXY(this._textOX + incX, this._textOY + incY);
       return this;
     }
   };
@@ -4443,7 +4525,7 @@
     setChildrenInteractiveEnable: SetChildrenInteractiveEnable,
     setInteractive: SetInteractive
   };
-  Object.assign(Methods$1, MoveChildMethods, BackgroundMethods, InnerBoundsMethods, SetAlignMethods);
+  Object.assign(Methods$1, MoveChildMethods, BackgroundMethods, InnerBoundsMethods, SetAlignMethods, SetTextOXYMethods$1);
 
   var Stack = /*#__PURE__*/function () {
     function Stack() {
@@ -4558,6 +4640,8 @@
       _this.defaultTextStyle = new TextStyle(null, textStyleConfig);
       _this.textStyle = _this.defaultTextStyle.clone();
       _this.setTestString(GetValue$6(config, 'testString', '|MÉqgy'));
+      _this._textOX = 0;
+      _this._textOY = 0;
       _this.background = new Background(_assertThisInitialized(_this), GetValue$6(config, 'background', undefined));
       _this.innerBounds = new InnerBounds(_assertThisInitialized(_this), GetValue$6(config, 'innerBounds', undefined));
       _this.children = [];
@@ -4594,6 +4678,22 @@
       value: function setSize(width, height) {
         this.setFixedSize(width, height);
         return this;
+      }
+    }, {
+      key: "textOX",
+      get: function get() {
+        return this._textOX;
+      },
+      set: function set(value) {
+        this.setTextOX(value);
+      }
+    }, {
+      key: "textOY",
+      get: function get() {
+        return this._textOY;
+      },
+      set: function set(value) {
+        this.setTextOY(value);
       }
     }]);
     return DynamicText;
@@ -4949,6 +5049,54 @@
     e.stopPropagation();
   };
 
+  var EnterClose = function EnterClose() {
+    this.close();
+    this.emit('keydown-ENTER', this.parent, this);
+    return this;
+  };
+
+  var OnOpen = function OnOpen() {
+    this.isOpened = true;
+    this.initText();
+    if (this.enterCloseEnable) {
+      this.scene.input.keyboard.once('keydown-ENTER', EnterClose, this);
+    }
+
+    // There is no cursor-position-change event, 
+    // so updating cursor position every tick
+    this.scene.sys.events.on('postupdate', this.updateText, this);
+    this.scene.input.on('pointerdown', this.onClickOutside, this);
+    if (this.onOpenCallback) {
+      this.onOpenCallback(this.parent, this);
+    }
+    this.emit('open', this);
+  };
+
+  var RemoveElement = function RemoveElement(element) {
+    if (!element) {
+      return;
+    }
+    var parentElement = element.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(element);
+    }
+  };
+
+  var OnClose = function OnClose() {
+    this.isOpened = false;
+    this.updateText();
+    this.scene.sys.events.off('postupdate', this.updateText, this);
+    this.scene.input.off('pointerdown', this.onClickOutside, this);
+    if (this.onCloseCallback) {
+      this.onCloseCallback(this.parent, this);
+    }
+
+    // Remove input text element when closing editor
+    RemoveElement(this.node);
+    this.node = undefined;
+    this.emit('close', this);
+  };
+
   var GetValue$3 = Phaser.Utils.Objects.GetValue;
   var CreateElement = function CreateElement(parent, config) {
     var element;
@@ -4983,6 +5131,16 @@
     var scaleManager = parent.scene.sys.scale;
     var parentElement = scaleManager.isFullscreen ? scaleManager.fullscreenTarget : document.body;
     parentElement.appendChild(element);
+
+    // open() -> 'focus' -> OnOpen
+    element.addEventListener('focus', function (e) {
+      OnOpen.call(parent);
+    });
+
+    // close() -> 'blur' -> OnClose
+    element.addEventListener('blur', function (e) {
+      OnClose.call(parent);
+    });
     return element;
   };
 
@@ -4996,36 +5154,17 @@
       return this;
     }
     SetLastOpenedEditor(this);
-    this.isOpened = true;
     if (!this.node) {
       // Create input text element when opening editor
       this.node = CreateElement(this, this.nodeConfig);
+      // Register 'focus', 'blur' events
     }
+
     this.setFocus();
-    this.initText();
-    if (this.enterCloseEnable) {
-      this.scene.input.keyboard.once('keydown-ENTER', this.close, this);
-    }
 
-    // There is no cursor-position-change event, 
-    // so updating cursor position every tick
-    this.scene.sys.events.on('postupdate', this.updateText, this);
-    this.scene.input.on('pointerdown', this.onClickOutside, this);
-    if (this.onOpenCallback) {
-      this.onOpenCallback(this.parent, this);
-    }
-    this.emit('open', this);
+    // 'focus' event -> OnOpen
+
     return this;
-  };
-
-  var RemoveElement = function RemoveElement(element) {
-    if (!element) {
-      return;
-    }
-    var parentElement = element.parentElement;
-    if (parentElement) {
-      parentElement.removeChild(element);
-    }
   };
 
   var Close = function Close() {
@@ -5035,18 +5174,9 @@
     }
     CloseLastOpenEditor(this);
     this.setBlur();
-    this.isOpened = false;
-    this.updateText();
-    this.scene.sys.events.off('postupdate', this.updateText, this);
-    this.scene.input.off('pointerdown', this.onClickOutside, this);
-    if (this.onCloseCallback) {
-      this.onCloseCallback(this.parent, this);
-    }
 
-    // Remove input text element when closing editor
-    RemoveElement(this.node);
-    this.node = undefined;
-    this.emit('close', this);
+    // 'blur' event -> OnOpen
+
     return this;
   };
 
@@ -5120,7 +5250,7 @@
       key: "initText",
       value: function initText() {}
 
-      // Override
+      // Override, invoking under 'postupdate' event of scene
     }, {
       key: "updateText",
       value: function updateText() {}
@@ -5439,7 +5569,7 @@
     return text;
   };
 
-  var OnSelectRange = function OnSelectRange(hiddenTextEdit) {
+  var SelectRange = function SelectRange(hiddenTextEdit) {
     var textObject = hiddenTextEdit.parent;
     // var text = textObject.text;
     var selectionStart = hiddenTextEdit.isOpened ? hiddenTextEdit.selectionStart : null;
@@ -5453,27 +5583,69 @@
     if (prevSelectionStart === null) {
       min = selectionStart;
       max = selectionEnd;
+    } else if (selectionStart === null) {
+      min = prevSelectionStart;
+      max = prevSelectionEnd;
     } else {
       min = Math.min(prevSelectionStart, selectionStart);
       max = Math.max(prevSelectionEnd, selectionEnd);
     }
     for (var i = min; i < max; i++) {
-      var inPrevSelectionRange = prevSelectionStart === null ? false : i >= prevSelectionStart && i < prevSelectionEnd;
-      var inSelectionRange = i >= selectionStart && i < selectionEnd;
-      if (inPrevSelectionRange && inSelectionRange) {
+      var inPrevSelectionRange;
+      if (prevSelectionStart === null) {
+        inPrevSelectionRange = false;
+      } else {
+        inPrevSelectionRange = i >= prevSelectionStart && i < prevSelectionEnd;
+      }
+      var inSelectionRange;
+      if (selectionStart === null) {
+        inSelectionRange = false;
+      } else {
+        inSelectionRange = i >= selectionStart && i < selectionEnd;
+      }
+      if (inPrevSelectionRange === inSelectionRange) {
         continue;
       }
       var child = textObject.getCharChild(i);
       if (child) {
-        if (inPrevSelectionRange) {
-          textObject.emit('cursorout', child, i, textObject);
-        } else {
-          textObject.emit('cursorin', child, i, textObject);
-        }
+        var eventName = inPrevSelectionRange ? 'cursorout' : 'cursorin';
+        textObject.emit(eventName, child, i, textObject);
       }
     }
     hiddenTextEdit.prevSelectionStart = selectionStart;
     hiddenTextEdit.prevSelectionEnd = selectionEnd;
+  };
+
+  var ScrollToBob = function ScrollToBob(bob) {
+    var textObject = bob.parent;
+    var textObjectLeftX = 0,
+      textObjectRightX = textObject.width,
+      textObjectTopY = 0,
+      textObjectBottomY = textObject.height;
+    var childX = bob.drawX,
+      childY = bob.drawY;
+    var childLeftX = childX + bob.drawTLX,
+      childRightX = childX + bob.drawTRX,
+      childTopY = childY + bob.drawTLY,
+      childBottomY = childY + bob.drawBLY;
+    var dx;
+    if (childLeftX < textObjectLeftX) {
+      dx = textObjectLeftX - childLeftX;
+    } else if (childRightX > textObjectRightX) {
+      dx = textObjectRightX - childRightX;
+    } else {
+      dx = 0;
+    }
+    var dy;
+    if (childTopY < textObjectTopY) {
+      dy = textObjectTopY - childTopY;
+    } else if (childBottomY > textObjectBottomY) {
+      dy = textObjectBottomY - childBottomY;
+    } else {
+      dy = 0;
+    }
+    textObject._textOX += dx;
+    textObject._textOY += dy;
   };
 
   var MoveCursor = function MoveCursor(hiddenTextEdit) {
@@ -5505,6 +5677,7 @@
         if (child.text === '\n') {
           child.copyTextSize(textObject.lastInsertCursor);
         }
+        ScrollToBob(child);
         textObject.emit('cursorin', child, cursorPosition, textObject);
       }
     }
@@ -5588,8 +5761,12 @@
         this.firstClickAfterOpen = true;
         gameObject.emit('open');
       }, _assertThisInitialized(_this)).on('close', function () {
+        // Route 'close' event
         gameObject.emit('close');
-      }, _assertThisInitialized(_this));
+      }).on('keydown-ENTER', function () {
+        // Route 'keydown-ENTER' event
+        gameObject.emit('keydown-ENTER');
+      });
       return _this;
     }
     _createClass(HiddenTextEdit, [{
@@ -5613,12 +5790,11 @@
         }
         if (textObject.text !== text) {
           textObject.setText(text);
-          textObject.emit('textchange', text, textObject, this);
         }
         if (this.isOpened) {
           if (this.selectionStart !== this.selectionEnd) {
             ClearCursor(this);
-            OnSelectRange(this);
+            SelectRange(this);
           } else {
             ClearSelectRange(this);
             MoveCursor(this);
@@ -5756,6 +5932,9 @@
     if (!HasValue(config, 'wrap.maxLines')) {
       var defaultValue = isSingleLineMode ? 1 : undefined;
       SetValue(config, 'wrap.maxLines', defaultValue);
+    }
+    if (isSingleLineMode) {
+      SetValue(config, 'wrap.wrapWidth', Infinity);
     }
     if (!HasValue(config, 'wrap.useDefaultTextHeight')) {
       SetValue(config, 'wrap.useDefaultTextHeight', true);
@@ -6292,7 +6471,7 @@
     if (newText === text) {
       return;
     }
-    if (!text) {
+    if (text == null) {
       text = '';
     }
 
@@ -6321,7 +6500,33 @@
 
     // Push back lastInsertCursor directly
     textObject.children.push(textObject.lastInsertCursor);
-    textObject.runWordWrap();
+    textObject.runWrap();
+    textObject.emit('textchange', newText, textObject);
+  };
+
+  var SetTextOXYMethods = {
+    setTextOYByPercentage: function setTextOYByPercentage(percentage) {
+      this.setTextOY(-this.textVisibleHeight * percentage);
+      return this;
+    },
+    getTextOYPercentage: function getTextOYPercentage() {
+      var textVisibleHeight = this.textVisibleHeight;
+      if (textVisibleHeight === 0) {
+        return 0;
+      }
+      return this._textOY / -textVisibleHeight;
+    },
+    setTextOXByPercentage: function setTextOXByPercentage(percentage) {
+      this.setTextOX(-this.textVisibleWidth * percentage);
+      return this;
+    },
+    getTextOXPercentage: function getTextOXPercentage() {
+      var textVisibleWidth = this.textVisibleWidth;
+      if (textVisibleWidth === 0) {
+        return 0;
+      }
+      return this._textOX / -textVisibleWidth;
+    }
   };
 
   var IsPlainObject = Phaser.Utils.Objects.IsPlainObject;
@@ -6350,6 +6555,12 @@
       var cursorStyle = ExtractByPrefix(config.style, 'cursor');
       _this = _super.call(this, scene, x, y, fixedWidth, fixedHeight, config);
       _this.type = 'rexCanvasInput';
+
+      // readonly
+      _this.contentWidth = undefined;
+      _this.contentHeight = undefined;
+      _this.lineHeight = undefined;
+      _this.linesCount = undefined;
       _this._text;
       _this.textEdit = CreateHiddenTextEdit(_assertThisInitialized(_this), config);
       if (config.focusStyle) {
@@ -6431,6 +6642,17 @@
       value: function appendText(text) {
         this.setText(this.text + text);
         return this;
+      }
+    }, {
+      key: "runWrap",
+      value: function runWrap(config) {
+        var result = _get(_getPrototypeOf(CanvasInput.prototype), "runWrap", this).call(this, config);
+        // Save content size
+        this.contentWidth = result.maxLineWidth;
+        this.contentHeight = result.linesHeight;
+        this.lineHeight = result.lineHeight;
+        this.linesCount = result.lines.length;
+        return result;
       }
     }, {
       key: "setSize",
@@ -6549,7 +6771,7 @@
     }, {
       key: "setNumberInput",
       value: function setNumberInput() {
-        this.textEdit.setNumberInput();
+        this.textEdit.setNumberInput().setSelectAllWhenFocusEnable();
         this.parseTextCallback = Number;
         return this;
       }
@@ -6581,12 +6803,67 @@
         this.minLength = value;
         return this;
       }
+    }, {
+      key: "topTextOY",
+      get: function get() {
+        return 0;
+      }
+    }, {
+      key: "bottomTextOY",
+      get: function get() {
+        return -this.tableVisibleHeight;
+      }
+    }, {
+      key: "leftTextOX",
+      get: function get() {
+        return 0;
+      }
+    }, {
+      key: "rightTextOX",
+      get: function get() {
+        return -this.textVisibleWidth;
+      }
+    }, {
+      key: "textVisibleHeight",
+      get: function get() {
+        var h = this.contentHeight - this.height;
+        if (h < 0) {
+          h = 0;
+        }
+        return h;
+      }
+    }, {
+      key: "textVisibleWidth",
+      get: function get() {
+        var w = this.contentWidth - this.width;
+        if (w < 0) {
+          w = 0;
+        }
+        return w;
+      }
+    }, {
+      key: "t",
+      get: function get() {
+        return this.getTextOYPercentage();
+      },
+      set: function set(value) {
+        this.setTextOYByPercentage(value).updateTexture();
+      }
+    }, {
+      key: "s",
+      get: function get() {
+        return this.getTextOXPercentage();
+      },
+      set: function set(value) {
+        this.setTextOXByPercentage(value).updateTexture();
+      }
     }]);
     return CanvasInput;
   }(DynamicText);
   var DefaultParseTextCallback = function DefaultParseTextCallback(text) {
     return text;
   };
+  Object.assign(CanvasInput.prototype, SetTextOXYMethods);
 
   function CanvasInputFactory (x, y, width, height, config) {
     var gameObject = new CanvasInput(this.scene, x, y, width, height, config);

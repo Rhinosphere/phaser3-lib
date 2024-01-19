@@ -140,4 +140,22 @@ declare class CanvasInput extends DynamicText {
 
     setMinLength(value: number): this;
     minLength: number;
+    
+    readonly contentWidth: number;
+    readonly contentHeight: number;
+    readonly linesCount: number;
+
+    readonly topTextOY: number;
+    readonly bottomTextOY: number;
+    readonly leftTextOX: number;
+    readonly rightTextOX: number;
+
+    setTextOYByPercentage(t: number): this;
+    getTextOYPercentage(): number;
+    t: number;
+
+    setTextOXByPercentage(s: number): this;
+    getTextOXPercentage(): number;
+    s: number;
+
 }

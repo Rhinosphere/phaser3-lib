@@ -101,13 +101,29 @@ declare namespace DynamicText {
     type RenderChildTypes = CharBob | ImageBob | DrawBob;
 
     interface IWrapResult {
+        // Common properties
         children: BobBase[],
         lines: ({
             children: BobBase[],
             width: number,
             height: number
         })[],
-        isLastPage: boolean
+        isLastPage: boolean,
+        maxLines: number,
+        padding: { top: number, left: number, right: number, bottom: number },
+        letterSpacing: number,
+        hAlign: number,
+        vAlign: number,
+
+        // WordWrap
+        maxLineWidth: number,
+        linesHeight: number,
+        lineHeight: number,
+
+        // VerticalWrap
+        maxLineHeight: number,
+        linesWidth: number,
+        lineWidth: number,
     }
 
     interface IConfig {
@@ -183,6 +199,15 @@ declare class DynamicText extends Canvas {
     modifyTextStyle(style: DynamicText.IConfigTextStyle): this;
     modifyDefaultTextStyle(style: DynamicText.IConfigTextStyle): this;
     text: string;
+
+    setTextOX(ox: number): this;
+    setTextOY(oy: number): this;
+    setTextOXY(ox: number, oy: number): this;
+    addTextOX(incX: number): this;
+    addTextOY(incY: number): this;
+    addTextOXY(incX: number, incY: number): this;
+    textOX: number;
+    textOY: number;
 
     setTestString(testString: string): this;
     testString: string;

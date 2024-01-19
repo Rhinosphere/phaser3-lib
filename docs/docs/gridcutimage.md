@@ -1,6 +1,6 @@
 ## Introduction
 
-Create image game objects in grids, to assemble target texture.
+Grid cut image texture to frames, then create image game objects from these frames.
 
 - Author: Rex
 - Methods
@@ -56,13 +56,13 @@ Create image game objects in grids, to assemble target texture.
     var images = scene.plugins.get('rexGridCutImage').gridCut(gameObjects, columns, rows, config);
     ```
 
-#### Import class
+#### Import method
 
 - Install rex plugins from npm
     ```
     npm i phaser3-rex-plugins
     ```
-- Import class
+- Import method
     ```javascript
     import GridCutImage from 'phaser3-rex-plugins/plugins/gridcutimage.js';
     ```
@@ -74,8 +74,8 @@ Create image game objects in grids, to assemble target texture.
 ### Grid cut
 
 ```javascript
-scene.plugins.get('rexGridCutImage').gridCut(gameObjects, columns, rows, {
-    // onCreateImage: undefined,
+var cellImages = scene.plugins.get('rexGridCutImage').gridCut(gameObjects, columns, rows, {
+    // createImageCallback: undefined,
     // ImageClass: Phaser.GameObjects.Image,
 
     // originX: 0.5,
@@ -88,7 +88,7 @@ scene.plugins.get('rexGridCutImage').gridCut(gameObjects, columns, rows, {
 
 - `gameObjects` : Target game object which has a texture, ex [Image](image.md), [RenderTexture](rendertexture.md).
 - `columns`, `rows` : Cut texture in `columns` x `rows` grids
-- `onCreateImage` : Custom callback to return an image game object, optional.
+- `createImageCallback` : Custom callback to return an image game object, optional.
     ```javascript
     function(scene, texture, frame) {
         return gameObject;
@@ -96,7 +96,7 @@ scene.plugins.get('rexGridCutImage').gridCut(gameObjects, columns, rows, {
     ``` 
     - `texture` : A texture object.
     - `frame` : Frame name.
-- `ImageClass` : Create image game object from this class. Default value is built-in [Image](image.md) class. Used when `onCreateImage` is `undefined`.
+- `ImageClass` : Create image game object from this class. Default value is built-in [Image](image.md) class. Used when `createImageCallback` is `undefined`.
 - `originX`, `originY` : Origin of created image game objects
 - `add` : 
     - `true` : Add these created image game objects to scene. Default value.
@@ -105,3 +105,4 @@ scene.plugins.get('rexGridCutImage').gridCut(gameObjects, columns, rows, {
     - `true` : Align position of created image game objects to target game object (`gameObjects`). Default value when `add` is set to `true`.
     - `false` : Don't set position of created image game objects. Default value when `add` is set to `false`.
 - `objectPool` : An array of image game objects, will reuse image game objects from this pool. Optional.
+- `cellImages` : Return image game objects.

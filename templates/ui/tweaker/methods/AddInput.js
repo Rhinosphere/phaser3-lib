@@ -1,29 +1,42 @@
-import GetInputType from '../utils/inputs/GetInputType.js';
 import CreateInputRow from '../builders/CreateInputRow.js';
-
-const GetValue = Phaser.Utils.Objects.GetValue;
 
 var AddInput = function (object, key, config) {
     if (arguments.length === 1) {
         config = object;
         object = config.bindingTarget;
         key = config.bindingKey;
-    } else if (config === undefined) {
-        config = {};
+    } else {
+        if (config === undefined) {
+            config = {};
+        }
+        config.bindingTarget = object;
+        config.bindingKey = key;
     }
 
     if (!config.title) {
         config.title = key;
     }
 
-    if (!config.view) {
-        config.view = GetInputType(object, key, config);
+    if (config.bindingTarget && config.bindingKey) {
+        config.value = config.bindingTarget[config.bindingKey];
+    } else {
+        config.value = undefined;
     }
 
     // Create InputRow
     var inputRowStyle = this.styles.inputRow || {};
     inputRowStyle.parentOrientation = this.styles.orientation;
-    var inputSizer = CreateInputRow(this.scene, config, inputRowStyle);
+    var inputSizer = CreateInputRow.call(this, this.scene, config, inputRowStyle);
+    if (!inputSizer) {
+        // Can't create inputField
+        console.error(`[Tweaker] Can't add Input
+    title: ${config.title}
+    view: ${config.view}
+`);
+
+        return this;
+    }
+
     var inputField = inputSizer.childrenMap.inputField;
 
     var proportion;
@@ -42,10 +55,6 @@ var AddInput = function (object, key, config) {
 
     if (config.onValueChange) {
         inputField.on('valuechange', config.onValueChange);
-    }
-
-    if (config.onValidate) {
-        inputField.setValidateCallback(config.onValidate);
     }
 
     // Bind target
