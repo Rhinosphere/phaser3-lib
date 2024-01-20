@@ -11,28 +11,13 @@
   ],
   "scripts": {
     "watch": "webpack --config webpack.config.js",
-<<<<<<< HEAD
-    "build": "rollup -c rollup.config.mjs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rexrainbow/phaser3-rex-notes"
-=======
     "build": "rollup -c rollup.config.mjs",
     "build-app": "webpack --config webpack.production.config.js"
->>>>>>> ba9c4226a16cb53c0ff7da6de209beef37e0bcd6
   },
   "keywords": [
     "phaser3"
   ],
   "license": "MIT",
-<<<<<<< HEAD
-  "bugs": {
-    "url": "https://github.com/rexrainbow/phaser3-rex-notes/issues"
-  },
-  "homepage": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/index.html",
-=======
->>>>>>> ba9c4226a16cb53c0ff7da6de209beef37e0bcd6
   "devDependencies": {
     "@babel/core": "^7.21.8",
     "@babel/plugin-transform-runtime": "^7.21.4",
@@ -73,17 +58,11 @@
     "terser": "^5.17.6",
     "tslib": "^2.5.2",
     "typescript": "^5.0.4",
-<<<<<<< HEAD
-    "webpack": "^5.82.1",
-    "webpack-cli": "^4.10.0",
-    "webpack-shell-plugin": "^0.5.0"
-=======
     "terser-webpack-plugin": "^5.3.9",
     "webpack": "^5.82.1",
     "webpack-cli": "^4.10.0",
     "webpack-shell-plugin": "^0.5.0",
     "jszip": "^3.10.1"
->>>>>>> ba9c4226a16cb53c0ff7da6de209beef37e0bcd6
   },
   "dependencies": {
     "eventemitter3": "^3.1.2",
@@ -95,8 +74,4 @@
     "papaparse": "^5.4.1",
     "webfontloader": "^1.6.28"
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> ba9c4226a16cb53c0ff7da6de209beef37e0bcd6
