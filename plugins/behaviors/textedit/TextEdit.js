@@ -29,6 +29,9 @@ class TextEdit extends ComponentBase {
         if (this.isShutdown) {
             return;
         }
+        this.inputText = undefined;
+        this.onClose = undefined;
+        this.delayCall = undefined;
 
         this.close();
 
